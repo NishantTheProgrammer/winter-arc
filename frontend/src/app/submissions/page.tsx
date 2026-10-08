@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { FileCode2, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface Submission {
   submissionId: string;
@@ -14,6 +16,8 @@ interface Submission {
   date: string;
   timestamp: string;
   analyzed: boolean;
+  code?: string;
+  language?: string;
 }
 
 const USER_COLORS: Record<string, string> = {
@@ -28,7 +32,7 @@ export default function SubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
-
+  const [selectedSub, setSelectedSub] = useState<Submission | null>(null);
   useEffect(() => {
     async function fetchSubmissions() {
       try {
@@ -145,10 +149,88 @@ export default function SubmissionsPage() {
                 <CheckCircle2 className="w-3 h-3" />
                 {sub.analyzed ? 'Analyzed' : 'Pending'}
               </div>
+
+              {/* View Code Button */}
+              <button 
+                onClick={() => setSelectedSub(sub)}
+                className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-500/20 hover:bg-indigo-500/40 rounded-lg transition-colors border border-indigo-500/30"
+              >
+                View
+              </button>
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* Code Modal Popup */}
+      <AnimatePresence>
+        {selectedSub && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedSub(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+            />
+            
+            {/* Modal Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                background: 'rgba(15,15,30,0.95)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
+                <div>
+                  <h3 className="text-lg font-bold text-white">{selectedSub.title}</h3>
+                  <p className="text-xs text-slate-400 mt-1">Submitted by @{selectedSub.username} on {selectedSub.date}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`https://leetcode.com/submissions/detail/${selectedSub.submissionId}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 flex items-center gap-1"
+                  >
+                    View on LeetCode
+                  </a>
+                  <button 
+                    onClick={() => setSelectedSub(null)}
+                    className="p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-4 bg-[#1e1e1e]">
+                {selectedSub.code ? (
+                  <SyntaxHighlighter
+                    language={selectedSub.language || 'javascript'}
+                    style={vscDarkPlus}
+                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent', fontSize: '14px' }}
+                    showLineNumbers
+                  >
+                    {selectedSub.code}
+                  </SyntaxHighlighter>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-48 text-slate-500 gap-3">
+                    <FileCode2 className="w-10 h-10 opacity-50" />
+                    <p>Code not available yet.</p>
+                    <p className="text-xs">The code will be fetched and stored when the AI analysis pipeline is triggered.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
