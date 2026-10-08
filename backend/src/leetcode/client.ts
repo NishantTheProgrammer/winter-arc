@@ -45,6 +45,33 @@ export async function getRecentSubmissions(username: string, limit: number = 10)
 }
 
 /**
+ * Fetch a user's public profile to get their avatar.
+ */
+export async function getUserProfile(username: string): Promise<string | null> {
+  const query = `
+    query userPublicProfile($username: String!) {
+      matchedUser(username: $username) {
+        profile {
+          userAvatar
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(LEETCODE_API_URL, {
+      query,
+      variables: { username },
+    });
+
+    return response.data.data.matchedUser?.profile?.userAvatar || null;
+  } catch (error) {
+    console.error(`Error fetching profile for ${username}:`, error);
+    return null;
+  }
+}
+
+/**
  * Fetch the actual code for a given submission ID.
  * Requires LEETCODE_SESSION and csrftoken cookies.
  */

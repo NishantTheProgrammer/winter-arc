@@ -6,13 +6,13 @@
  *   cd backend && npx tsx src/scripts/seedUsers.ts
  */
 import { db } from '../firebase/config';
-import { getRecentSubmissions } from '../leetcode/client';
+import { getRecentSubmissions, getUserProfile } from '../leetcode/client';
 
 const USERS = [
   { username: 'nishanttheprogrammer', displayName: 'Nishant' },
-  { username: 'mohittheprogrammer',   displayName: 'Mohit'   },
-  { username: 'surajsingh542',        displayName: 'Suraj'   },
-  { username: 'harshit_sodhani',      displayName: 'Harshit' },
+  { username: 'mohittheprogrammer', displayName: 'Mohit' },
+  { username: 'surajsingh542', displayName: 'Suraj' },
+  { username: 'harshit_sodhani', displayName: 'Harshit' },
 ];
 
 const SUBMISSION_LIMIT = 50; // how many past accepted submissions to load per user
@@ -27,13 +27,27 @@ async function seedUsers() {
     const userRef = db.collection('users').doc(user.username);
     await userRef.set(
       {
-        username:    user.username,
+        username: user.username,
         displayName: user.displayName,
-        createdAt:   new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       },
       { merge: true }   // don't overwrite fields we don't set here
     );
     console.log(`  ✅ User document saved`);
+
+    // ── 1.5 Fetch and save avatar to participants collection ───────────────
+    const avatar = await getUserProfile(user.username);
+    if (avatar) {
+      const partRef = db.collection('participants').doc(user.username);
+      await partRef.set({
+        username: user.username,
+        displayName: user.displayName,
+        avatar: avatar
+      }, { merge: true });
+      console.log(`  🖼️  Avatar saved to participants collection`);
+    } else {
+      console.log(`  ⚠️  No avatar found for ${user.username}`);
+    }
 
     // ── 2. Fetch recent accepted submissions from LeetCode ─────────────────
     const submissions = await getRecentSubmissions(user.username, SUBMISSION_LIMIT);
@@ -62,12 +76,12 @@ async function seedUsers() {
         docRef,
         {
           submissionId: sub.id,
-          username:     user.username,
-          title:        sub.title,
-          titleSlug:    sub.titleSlug,
+          username: user.username,
+          title: sub.title,
+          titleSlug: sub.titleSlug,
           date,
-          timestamp:    sub.timestamp,
-          analyzed:     false, // will be updated when AI analysis runs
+          timestamp: sub.timestamp,
+          analyzed: false, // will be updated when AI analysis runs
         },
         { merge: true }
       );

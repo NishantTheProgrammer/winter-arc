@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FileCode2, Flame, Zap, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, FileCode2, Flame, Zap, Menu, X, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { href: '/',            label: 'Dashboard',   icon: LayoutDashboard },
   { href: '/users',       label: 'Users',        icon: Users },
   { href: '/submissions', label: 'Submissions',  icon: FileCode2 },
+  { href: '/settings',    label: 'Settings',     icon: Settings },
 ];
 
 export default function Sidebar() {
