@@ -20,9 +20,17 @@ const llm = new ChatOllama({
 
 export const mapApproachNode = async (state: AgentState): Promise<Partial<AgentState>> => {
   const prompt = `
-    Analyze the following code and map the approach used to the provided DSA hierarchy.
-    Provide an array of strings representing the path(s) in the hierarchy that match the approach.
-    For example: ["DSA", "Two Pointers", "Sliding Window", "Fixed Size"]
+    Analyze the following code and identify the DSA approaches/techniques used.
+    Map each approach to a path in the provided DSA hierarchy.
+
+    Each approach should be output as a single string with path segments joined by " > ".
+    Start each path from the top-level category (do NOT include "DSA" as the root).
+    
+    Examples of valid path strings:
+      "Two Pointers > Sliding Window > Fixed Size"
+      "Hashing > Hash Map"
+      "Dynamic Programming > Memoization"
+      "Recursion"
 
     Hierarchy:
     ${JSON.stringify(hierarchy)}
@@ -30,11 +38,11 @@ export const mapApproachNode = async (state: AgentState): Promise<Partial<AgentS
     Code (${state.lang}):
     ${state.code}
 
-    Output valid JSON strictly in the following format:
+    Output valid JSON strictly in this format:
     {
       "approachesUsed": [
-        "Path string 1",
-        "Path string 2"
+        "TopLevel > SubLevel > SubSubLevel",
+        "TopLevel > SubLevel"
       ]
     }
   `;

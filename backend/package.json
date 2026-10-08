@@ -8,6 +8,7 @@
     "seed": "npx tsx src/scripts/seedUsers.ts",
     "fetch": "npx tsx src/scripts/fetchCodes.ts",
     "analyze": "npx tsx src/scripts/analyzePending.ts",
+    "reanalyze": "npx tsx src/scripts/resetAndReanalyze.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -38,12 +38,30 @@ export default function UsersPage() {
 
         const coveredMap: Record<string, Set<string>> = {};
         data.forEach(u => (coveredMap[u.username] = new Set()));
+
         subData.forEach(sub => {
-          if (sub.username && sub.analysis && sub.analysis.approachesUsed) {
-            sub.analysis.approachesUsed.forEach((approach: string) => {
-              if (TOPICS.includes(approach)) coveredMap[sub.username].add(approach);
-            });
-          }
+          if (!sub.username || !sub.analysis?.approachesUsed) return;
+          // Only count submissions that were actually analyzed from code
+          if (!sub.analyzed) return;
+
+          sub.analysis.approachesUsed.forEach((path: string) => {
+            // The LLM returns path strings like:
+            //   "DSA > Two Pointers > Sliding Window > Fixed Size"
+            //   or just "Two Pointers"
+            // Split on common separators and look for the FIRST segment that
+            // matches a top-level TOPICS entry — that is the real skill used.
+            const segments = path
+              .split(/\s*[>\/\->|,]\s*|\s+\-\s+/)
+              .map(s => s.trim())
+              .filter(Boolean);
+
+            for (const segment of segments) {
+              if (TOPICS.includes(segment)) {
+                coveredMap[sub.username].add(segment);
+                break; // only record the top-level category, not sub-topics
+              }
+            }
+          });
         });
         setCoveredTopics(coveredMap);
       } catch (err) {
