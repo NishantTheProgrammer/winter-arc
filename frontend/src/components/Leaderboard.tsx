@@ -20,6 +20,7 @@ const DISPLAY_NAMES: Record<string, string> = {
   nishanttheprogrammer: 'Nishant',
   mohittheprogrammer:   'Mohit',
   surajsingh542:        'Suraj',
+  harshit_sodhani:      'Harshit',
 };
 
 const RANK_STYLES = [

@@ -12,6 +12,7 @@ const USERS = [
   { username: 'nishanttheprogrammer', displayName: 'Nishant' },
   { username: 'mohittheprogrammer',   displayName: 'Mohit'   },
   { username: 'surajsingh542',        displayName: 'Suraj'   },
+  { username: 'harshit_sodhani',      displayName: 'Harshit' },
 ];
 
 const SUBMISSION_LIMIT = 50; // how many past accepted submissions to load per user
