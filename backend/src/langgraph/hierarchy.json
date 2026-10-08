@@ -1,0 +1,271 @@
+{
+    "DSA": {
+        "Brute Force": {
+            "Enumeration": [],
+            "Simulation": [],
+            "Exhaustive Search": [],
+            "Generate and Check": []
+        },
+        "Two Pointers": {
+            "Opposite Direction": [],
+            "Same Direction": {
+                "Fast Slow": [],
+                "Read Write": []
+            },
+            "Sliding Window": {
+                "Fixed Size": [],
+                "Variable Size": {
+                    "Expand": [],
+                    "Shrink": [],
+                    "Expand and Shrink": [],
+                    "Running Sum": [],
+                    "Running Cost": [],
+                    "Frequency Tracking": []
+                }
+            }
+        },
+        "Hashing": {
+            "Hash Set": [],
+            "Hash Map": [],
+            "Frequency Counting": [],
+            "Complement Lookup": [],
+            "Prefix Sum Hashing": [],
+            "State Tracking": []
+        },
+        "Prefix Suffix": {
+            "Prefix Sum": [],
+            "Suffix Sum": [],
+            "Prefix Product": [],
+            "Prefix XOR": [],
+            "Difference Array": [],
+            "2D Prefix Sum": []
+        },
+        "Searching": {
+            "Linear Search": [],
+            "Binary Search": {
+                "Exact Match": [],
+                "Lower Bound": [],
+                "Upper Bound": [],
+                "First Valid": [],
+                "Last Valid": [],
+                "Search on Answer": [],
+                "Search on Monotonic Function": []
+            },
+            "Ternary Search": []
+        },
+        "Sorting": {
+            "Sort and Two Pointers": [],
+            "Sort and Binary Search": [],
+            "Sort and Greedy": [],
+            "Sort and Sweep": [],
+            "Custom Ordering": [],
+            "Coordinate Compression": []
+        },
+        "Stack": {
+            "Basic Stack": [],
+            "Matching": [],
+            "Expression Processing": [],
+            "Stack Simulation": [],
+            "Monotonic Stack": {
+                "Increasing": [],
+                "Decreasing": []
+            }
+        },
+        "Queue": {
+            "Basic Queue": [],
+            "Deque": [],
+            "Monotonic Queue": [],
+            "Queue Simulation": []
+        },
+        "Linked List": {
+            "Traversal": [],
+            "Fast Slow Pointer": [],
+            "Reversal": [],
+            "Dummy Node": [],
+            "Merge": [],
+            "Pointer Manipulation": []
+        },
+        "Recursion": {
+            "Direct Recursion": [],
+            "Recursive Traversal": [],
+            "Recursion with State": [],
+            "Memoized Recursion": []
+        },
+        "Backtracking": {
+            "Choose Explore Undo": [],
+            "Include Exclude": [],
+            "Permutation": [],
+            "Combination": [],
+            "Subset Generation": [],
+            "Constraint Search": [],
+            "Pruning": []
+        },
+        "Trees": {
+            "DFS": {
+                "Preorder": [],
+                "Inorder": [],
+                "Postorder": []
+            },
+            "BFS": {
+                "Level Order": []
+            },
+            "Recursive Tree Processing": [],
+            "Iterative Tree Processing": [],
+            "Tree with Hashing": [],
+            "Tree DP": []
+        },
+        "Heap Priority Queue": {
+            "Min Heap": [],
+            "Max Heap": [],
+            "Top K": [],
+            "K Way Processing": [],
+            "Two Heaps": [],
+            "Heap and Greedy": []
+        },
+        "Greedy": {
+            "Local Optimal Choice": [],
+            "Sort and Greedy": [],
+            "Greedy and Heap": [],
+            "Greedy and Two Pointers": [],
+            "Greedy and Stack": [],
+            "Exchange Argument": []
+        },
+        "Graphs": {
+            "Representation": {
+                "Adjacency List": [],
+                "Adjacency Matrix": [],
+                "Edge List": []
+            },
+            "Traversal": {
+                "DFS": [],
+                "BFS": [],
+                "Multi Source BFS": [],
+                "Iterative DFS": [],
+                "Recursive DFS": [],
+                "State Space Traversal": []
+            },
+            "Shortest Path": {
+                "BFS": [],
+                "0 1 BFS": [],
+                "Dijkstra": [],
+                "Bellman Ford": [],
+                "Floyd Warshall": []
+            },
+            "Minimum Spanning Tree": {
+                "Prim": [],
+                "Kruskal": []
+            },
+            "Topological Sort": {
+                "BFS Based": [],
+                "DFS Based": []
+            },
+            "Connectivity": {
+                "DFS BFS": [],
+                "Disjoint Set Union": []
+            },
+            "Advanced Graph": {
+                "Strongly Connected Components": [],
+                "Bridges": [],
+                "Articulation Points": [],
+                "Eulerian Path": []
+            }
+        },
+        "Dynamic Programming": {
+            "Memoization": [],
+            "Tabulation": [],
+            "State Transition": [],
+            "1D DP": [],
+            "2D DP": [],
+            "Grid DP": [],
+            "Subsequence DP": [],
+            "String DP": [],
+            "Interval DP": [],
+            "Tree DP": [],
+            "Knapsack DP": [],
+            "Bitmask DP": [],
+            "Digit DP": []
+        },
+        "Divide and Conquer": {
+            "Divide": [],
+            "Solve": [],
+            "Combine": [],
+            "Recursive Splitting": [],
+            "Divide and Conquer Optimization": []
+        },
+        "Bit Manipulation": {
+            "AND": [],
+            "OR": [],
+            "XOR": [],
+            "NOT": [],
+            "Left Shift": [],
+            "Right Shift": [],
+            "Set Bit": [],
+            "Clear Bit": [],
+            "Toggle Bit": [],
+            "Count Bits": [],
+            "Bitmask": []
+        },
+        "String Algorithms": {
+            "Character Frequency": [],
+            "String Hashing": [],
+            "Pattern Matching": {
+                "KMP": [],
+                "Z Algorithm": [],
+                "Rabin Karp": []
+            },
+            "Trie": [],
+            "Prefix Processing": [],
+            "Suffix Processing": [],
+            "String DP": []
+        },
+        "Mathematics": {
+            "GCD": [],
+            "LCM": [],
+            "Prime Generation": [],
+            "Prime Factorization": [],
+            "Modular Arithmetic": [],
+            "Fast Exponentiation": [],
+            "Combinatorics": [],
+            "Number Theory": [],
+            "Matrix Exponentiation": [],
+            "Probability": []
+        },
+        "Range Queries": {
+            "Prefix Sum": [],
+            "Difference Array": [],
+            "Fenwick Tree": [],
+            "Segment Tree": {
+                "Basic": [],
+                "Lazy Propagation": []
+            },
+            "Sparse Table": []
+        },
+        "Advanced Data Structures": {
+            "Trie": [],
+            "Disjoint Set Union": [],
+            "Fenwick Tree": [],
+            "Segment Tree": [],
+            "Sparse Table": [],
+            "Ordered Set": [],
+            "Balanced Tree": []
+        },
+        "Computational Geometry": {
+            "Orientation": [],
+            "Cross Product": [],
+            "Line Intersection": [],
+            "Sweep Line": [],
+            "Convex Hull": [],
+            "Closest Pair": []
+        },
+        "Advanced Techniques": {
+            "Meet in the Middle": [],
+            "Offline Queries": [],
+            "Mo's Algorithm": [],
+            "Binary Lifting": [],
+            "Network Flow": [],
+            "Matching": [],
+            "Randomized Algorithms": [],
+            "Algorithm Optimization": []
+        }
+    }
+}
