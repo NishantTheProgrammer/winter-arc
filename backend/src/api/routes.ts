@@ -1,9 +1,39 @@
 import { Router } from 'express';
 import { getRecentSubmissions, getSubmissionDetails } from '../leetcode/client';
 import { processSubmission } from './analyze';
+import { db } from '../firebase/config';
 
 const router = Router();
 
+// ── GET /api/users ─────────────────────────────────────────────────────────
+// Returns all registered users from Firestore
+router.get('/users', async (_req, res) => {
+  try {
+    const snapshot = await db.collection('users').get();
+    const users = snapshot.docs.map(doc => doc.data());
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// ── GET /api/submissions/:username ─────────────────────────────────────────
+// Returns stored submission history for a user
+router.get('/submissions/:username', async (req, res) => {
+  try {
+    const snapshot = await db
+      .collection('submissions')
+      .where('username', '==', req.params.username)
+      .orderBy('timestamp', 'desc')
+      .get();
+    const submissions = snapshot.docs.map(doc => doc.data());
+    res.json(submissions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+});
+
+// ── POST /api/trigger ──────────────────────────────────────────────────────
 // Endpoint to trigger manual fetch and analysis
 router.post('/trigger', async (req, res) => {
   const { username, leetcodeSession, csrfToken, userId, dailySlug } = req.body;
