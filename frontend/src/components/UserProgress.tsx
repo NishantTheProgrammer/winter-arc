@@ -16,7 +16,10 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
   const days: string[] = [];
   let d = new Date(startDate);
   while (d <= endDate) {
-    days.push(d.toISOString().split('T')[0]);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    days.push(`${yyyy}-${mm}-${dd}`);
     d.setDate(d.getDate() + 1);
   }
 
