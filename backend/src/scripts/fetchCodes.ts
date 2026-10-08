@@ -11,7 +11,8 @@ if (!LEETCODE_SESSION || !CSRF_TOKEN) {
 }
 
 const BATCH_SIZE = 10; // Process 10 submissions at a time
-const CUTOFF_TIMESTAMP = new Date('2026-10-01T00:00:00Z').getTime() / 1000;
+const START_TIMESTAMP = new Date('2026-10-01T00:00:00Z').getTime() / 1000;
+const END_TIMESTAMP = new Date('2027-01-01T00:00:00Z').getTime() / 1000;
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -21,16 +22,17 @@ async function fetchCodesInBatches() {
   // 1. Get all submissions
   const snapshot = await db.collection('submissions').get();
   
-  // 2. Filter for submissions after Oct 1, 2026 that DO NOT have code
+  // 2. Filter for submissions strictly within Oct-Dec 2026 that DO NOT have code or question context
   const missingCode = snapshot.docs
     .map(doc => ({ docId: doc.id, ...doc.data() as any }))
     .filter(sub => {
-      const isAfterCutoff = parseInt(sub.timestamp) >= CUTOFF_TIMESTAMP;
+      const timestamp = parseInt(sub.timestamp);
+      const isWinterArc = timestamp >= START_TIMESTAMP && timestamp < END_TIMESTAMP;
       const needsData = !sub.code || !sub.questionContext;
-      return isAfterCutoff && needsData;
+      return isWinterArc && needsData;
     });
 
-  console.log(`Found ${missingCode.length} submissions to fetch (after Oct 1st 2026).`);
+  console.log(`Found ${missingCode.length} submissions to fetch (Oct-Dec 2026).`);
 
   if (missingCode.length === 0) {
     console.log('✅ Nothing to do. All codes are downloaded!');

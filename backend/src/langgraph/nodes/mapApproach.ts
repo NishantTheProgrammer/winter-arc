@@ -14,6 +14,7 @@ try {
 const llm = new ChatOllama({
   model: "llama3.2",
   temperature: 0,
+  format: "json",
   baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
 });
 
@@ -41,8 +42,20 @@ export const mapApproachNode = async (state: AgentState): Promise<Partial<AgentS
   const response = await llm.invoke(prompt);
   try {
     const rawContent = response.content.toString();
-    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawContent);
+    
+    let parsed: any = {};
+    const markdownMatch = rawContent.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);
+    if (markdownMatch && markdownMatch[1]) {
+      parsed = JSON.parse(markdownMatch[1]);
+    } else {
+      const firstBrace = rawContent.indexOf('{');
+      const lastBrace = rawContent.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+        parsed = JSON.parse(rawContent.substring(firstBrace, lastBrace + 1));
+      } else {
+        parsed = JSON.parse(rawContent);
+      }
+    }
 
     return {
       approachesUsed: parsed.approachesUsed || [],

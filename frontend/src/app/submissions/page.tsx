@@ -28,6 +28,12 @@ const USER_COLORS: Record<string, string> = {
   surajsingh542:        'linear-gradient(135deg, #10b981, #06b6d4)',
 };
 
+const USER_THEME_COLORS: Record<string, string> = {
+  nishanttheprogrammer: '99, 102, 241', // indigo-500
+  mohittheprogrammer:   '245, 158, 11',  // amber-500
+  surajsingh542:        '16, 185, 129',  // emerald-500
+};
+
 const USERS = ['All', 'nishanttheprogrammer', 'mohittheprogrammer', 'surajsingh542'];
 
 export default function SubmissionsPage() {
@@ -188,53 +194,55 @@ export default function SubmissionsPage() {
                 border: '1px solid rgba(255,255,255,0.1)',
               }}
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedSub.title}</h3>
-                  <div className="flex flex-col gap-2 mt-2">
-                    <p className="text-xs text-slate-400">
-                      Submitted by <span className="font-semibold text-white">@{selectedSub.username}</span> on {selectedSub.date}
-                    </p>
-                    
-                    {/* Related Submissions Chips */}
-                    {submissions.filter(s => s.titleSlug === selectedSub.titleSlug && s.submissionId !== selectedSub.submissionId).length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500">Also solved by:</span>
-                        {submissions
-                          .filter(s => s.titleSlug === selectedSub.titleSlug && s.submissionId !== selectedSub.submissionId)
-                          .map(otherSub => (
-                            <button
-                              key={otherSub.submissionId}
-                              onClick={() => setSelectedSub(otherSub)}
-                              className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-transform hover:scale-105"
-                              style={{ 
-                                background: USER_COLORS[otherSub.username] || 'rgba(99,102,241,0.5)',
-                                color: 'white',
-                                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
-                              }}
-                            >
-                              @{otherSub.username}
-                            </button>
-                        ))}
-                      </div>
-                    )}
+              <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10 bg-white/5">
+                <div className="flex items-start justify-between w-full">
+                  <h3 className="text-lg font-bold text-white leading-tight">{selectedSub.title}</h3>
+                  <div className="flex items-center gap-3 ml-4 shrink-0">
+                    <a
+                      href={`https://leetcode.com/submissions/detail/${selectedSub.submissionId}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 flex items-center gap-1"
+                    >
+                      View on LeetCode
+                    </a>
+                    <button 
+                      onClick={() => setSelectedSub(null)}
+                      className="p-1.5 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <a
-                    href={`https://leetcode.com/submissions/detail/${selectedSub.submissionId}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 flex items-center gap-1"
-                  >
-                    View on LeetCode
-                  </a>
-                  <button 
-                    onClick={() => setSelectedSub(null)}
-                    className="p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    ✕
-                  </button>
+
+                {/* All Users Chips */}
+                <div className="flex items-center flex-wrap gap-2 mt-1">
+                  {submissions
+                    .filter(s => s.titleSlug === selectedSub.titleSlug)
+                    .map(sub => {
+                      const isSelected = sub.submissionId === selectedSub.submissionId;
+                      const rgb = USER_THEME_COLORS[sub.username] || '99, 102, 241';
+                      const score = sub.analysis?.aggregatedScore?.toFixed(1);
+                      return (
+                        <button
+                          key={sub.submissionId}
+                          onClick={() => setSelectedSub(sub)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 hover:brightness-125 ${
+                            isSelected ? 'shadow-[0_0_15px_rgba(255,255,255,0.02)]' : ''
+                          }`}
+                          style={{ 
+                            color: `rgb(${rgb})`,
+                            backgroundColor: isSelected ? `rgba(${rgb}, 0.15)` : `rgba(${rgb}, 0.04)`,
+                            border: `1px solid rgba(${rgb}, ${isSelected ? 0.3 : 0.1})`
+                          }}
+                        >
+                          @{sub.username}{score ? ` (${score})` : ''}
+                        </button>
+                      );
+                  })}
+                  <span className="text-[10px] font-medium text-slate-500 ml-2 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                    {selectedSub.date}
+                  </span>
                 </div>
               </div>
 
@@ -242,7 +250,7 @@ export default function SubmissionsPage() {
                 
                 {/* Problem Statement Collapsible */}
                 {selectedSub.questionContext && selectedSub.questionContext !== "No description available" && (
-                  <details className="group border border-white/10 bg-white/5 rounded-xl overflow-hidden">
+                  <details className="group border border-white/10 bg-white/5 rounded-xl overflow-hidden shrink-0">
                     <summary className="px-4 py-3 cursor-pointer text-sm font-semibold text-slate-300 hover:text-white bg-white/5 select-none flex items-center justify-between">
                       Problem Statement
                       <span className="text-slate-500 transition-transform group-open:-rotate-180">▼</span>
@@ -256,7 +264,7 @@ export default function SubmissionsPage() {
 
                 {/* AI Analysis Report */}
                 {selectedSub.analyzed && selectedSub.analysis && (
-                  <div className="border border-indigo-500/30 bg-indigo-500/5 rounded-xl overflow-hidden flex flex-col">
+                  <div className="border border-indigo-500/30 bg-indigo-500/5 rounded-xl overflow-hidden flex flex-col shrink-0">
                     <div className="px-4 py-3 border-b border-indigo-500/20 bg-indigo-500/10 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-indigo-400 font-bold">AI Analysis Report</span>
@@ -298,7 +306,7 @@ export default function SubmissionsPage() {
 
                 {/* Code Viewer */}
                 {selectedSub.code ? (
-                  <div className="rounded-xl overflow-hidden border border-white/10 bg-[#1e1e1e]">
+                  <div className="rounded-xl overflow-hidden border border-white/10 bg-[#1e1e1e] shrink-0">
                     <SyntaxHighlighter
                       language={selectedSub.language || 'javascript'}
                       style={vscDarkPlus}
