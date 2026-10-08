@@ -28,10 +28,17 @@ const RANK_STYLES = [
   { bg: 'linear-gradient(135deg,#cd7c2f,#a16207)', text: '🥉' },
 ];
 
-export default function Leaderboard() {
+interface LeaderboardProps {
+  date: string;
+}
+
+export default function Leaderboard({ date }: LeaderboardProps) {
   const [scores, setScores] = useState<UserScore[]>([]);
   const [loading, setLoading] = useState(true);
-  const today = new Date().toISOString().split('T')[0];
+  
+  // Format the display title based on the selected date
+  const isToday = date === new Date().toISOString().split('T')[0];
+  const dateTitle = isToday ? "Today's Leaderboard" : `Leaderboard for ${date}`;
 
   useEffect(() => {
     async function fetchScores() {
@@ -44,7 +51,7 @@ export default function Leaderboard() {
         const snap = await getDocs(q);
         const todayDocs = snap.docs
           .map(d => d.data())
-          .filter(d => d.date === today);
+          .filter(d => d.date === date);
 
         if (todayDocs.length > 0) {
           setScores(todayDocs.map(d => ({
@@ -79,7 +86,7 @@ export default function Leaderboard() {
       }
     }
     fetchScores();
-  }, [today]);
+  }, [date]);
 
   return (
     <div className="rounded-2xl p-6 w-full text-white"
@@ -90,10 +97,10 @@ export default function Leaderboard() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Trophy className="w-6 h-6 text-yellow-400" />
-          <h2 className="text-xl font-bold tracking-wide">Today's Leaderboard</h2>
+          <h2 className="text-xl font-bold tracking-wide">{dateTitle}</h2>
         </div>
         <span className="text-xs text-slate-500 bg-white/5 px-3 py-1 rounded-lg border border-white/5">
-          {today}
+          {date}
         </span>
       </div>
 
