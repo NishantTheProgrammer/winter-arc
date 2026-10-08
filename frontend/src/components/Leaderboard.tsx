@@ -23,16 +23,19 @@ const DISPLAY_NAMES: Record<string, string> = {
 };
 
 const RANK_STYLES = [
-  { bg: 'linear-gradient(135deg,#f59e0b,#d97706)', text: '🥇' },
-  { bg: 'linear-gradient(135deg,#94a3b8,#64748b)', text: '🥈' },
-  { bg: 'linear-gradient(135deg,#cd7c2f,#a16207)', text: '🥉' },
+  { bg: 'linear-gradient(135deg,#fbbf24,#d97706)', text: '🥇' },
+  { bg: 'linear-gradient(135deg,#cbd5e1,#64748b)', text: '🥈' },
+  { bg: 'linear-gradient(135deg,#d97706,#7c2d12)', text: '🥉' },
 ];
 
 interface LeaderboardProps {
   date: string;
+  daySubmissions?: any[];
+  avatars?: Record<string, string>;
+  onRowClick?: (username: string) => void;
 }
 
-export default function Leaderboard({ date }: LeaderboardProps) {
+export default function Leaderboard({ date, daySubmissions, avatars, onRowClick }: LeaderboardProps) {
   const [scores, setScores] = useState<UserScore[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -111,23 +114,49 @@ export default function Leaderboard({ date }: LeaderboardProps) {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {scores.map((user, index) => (
+          {(() => {
+            let currentRank = 1;
+            return scores.map((user, index) => {
+              if (index > 0 && user.totalScore < scores[index - 1].totalScore) {
+                currentRank++;
+              }
+              const rankIndex = currentRank - 1;
+              return (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               key={user.username}
-              className="rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5"
+              onClick={() => onRowClick && onRowClick(user.username)}
+              className={`rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5 ${onRowClick ? 'cursor-pointer hover:bg-white/10' : ''}`}
               style={{
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
               <div className="flex items-center gap-4">
-                {/* Rank badge */}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black shadow-inner flex-shrink-0"
-                  style={{ background: index < 3 ? RANK_STYLES[index].bg : 'rgba(99,102,241,0.2)' }}>
-                  {index < 3 ? RANK_STYLES[index].text : index + 1}
+                <div className="relative flex-shrink-0">
+                  {avatars && avatars[user.username] ? (
+                    <img 
+                      src={avatars[user.username]} 
+                      alt={user.username} 
+                      className="w-12 h-12 rounded-full object-cover border border-white/10"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-slate-400">
+                      {user.displayName.charAt(0)}
+                    </div>
+                  )}
+                  {/* Rank badge at bottom right */}
+                  {rankIndex < 3 ? (
+                    <div className="absolute -bottom-1.5 -right-1.5 text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] z-10 leading-none">
+                      {RANK_STYLES[rankIndex].text}
+                    </div>
+                  ) : (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-md border-2 border-[#151525] z-10 bg-slate-700 text-white">
+                      {currentRank}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -147,14 +176,16 @@ export default function Leaderboard({ date }: LeaderboardProps) {
                 </span>
                 <div className="text-right">
                   <div className="text-2xl font-black text-transparent bg-clip-text"
-                    style={{ backgroundImage: 'linear-gradient(90deg,#fde68a,#d97706)' }}>
+                    style={{ backgroundImage: rankIndex < 3 ? RANK_STYLES[rankIndex].bg : 'linear-gradient(90deg,#9ca3af,#4b5563)' }}>
                     {user.totalScore > 0 ? user.totalScore.toFixed(1) : '—'}
                   </div>
                   <div className="text-xs text-slate-500 uppercase tracking-widest">Score</div>
                 </div>
               </div>
             </motion.div>
-          ))}
+              );
+            });
+          })()}
         </div>
       )}
 
