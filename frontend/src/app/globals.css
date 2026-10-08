@@ -26,6 +26,26 @@
   --theme-c2: 51, 65, 85;
 }
 
+[data-theme="ocean"] {
+  --theme-c1: 59, 130, 246; /* blue-500 */
+  --theme-c2: 6, 182, 212;  /* cyan-500 */
+}
+
+[data-theme="cyberpunk"] {
+  --theme-c1: 219, 39, 119; /* pink-600 */
+  --theme-c2: 234, 179, 8;  /* yellow-500 */
+}
+
+[data-theme="forest"] {
+  --theme-c1: 21, 128, 61; /* green-700 */
+  --theme-c2: 132, 204, 22; /* lime-500 */
+}
+
+[data-theme="amethyst"] {
+  --theme-c1: 126, 34, 206; /* purple-700 */
+  --theme-c2: 67, 56, 202; /* indigo-700 */
+}
+
 body {
   font-feature-settings: "rlig" 1, "calt" 1;
   background-image: radial-gradient(circle at top left, rgba(var(--theme-c1), 0.15) 0%, transparent 40%),

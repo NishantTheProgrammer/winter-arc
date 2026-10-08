@@ -28,6 +28,30 @@ const THEMES = [
     name: 'Stealth',
     colors: ['#64748b', '#334155'], // Slate
     description: 'A quiet, distraction-free monochrome look.'
+  },
+  {
+    id: 'ocean',
+    name: 'Deep Ocean',
+    colors: ['#3b82f6', '#06b6d4'],
+    description: 'Cool blue and cyan aquatic tones.'
+  },
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk',
+    colors: ['#db2777', '#eab308'],
+    description: 'High-contrast neon pink and yellow.'
+  },
+  {
+    id: 'forest',
+    name: 'Forest',
+    colors: ['#15803d', '#84cc16'],
+    description: 'Earthy green and lime accents.'
+  },
+  {
+    id: 'amethyst',
+    name: 'Amethyst',
+    colors: ['#7e22ce', '#4338ca'],
+    description: 'Deep purple and rich indigo tones.'
   }
 ];
 
