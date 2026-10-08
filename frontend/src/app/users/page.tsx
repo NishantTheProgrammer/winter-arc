@@ -44,10 +44,10 @@ export default function UsersPage() {
         subData.forEach(sub => {
           if (sub.username && sub.analysis && sub.analysis.approachesUsed) {
             sub.analysis.approachesUsed.forEach((approach: string) => {
-              // Extract the top level topic like "Hashing" from "DSA / Hashing / Hash Map"
-              const parts = approach.split(' / ');
-              if (parts.length >= 2) {
-                coveredMap[sub.username].add(parts[1]);
+              // The approach array contains strings like 'Hashing', 'Two Pointers', etc.
+              // Check if the approach is one of our top-level TOPICS and add it.
+              if (TOPICS.includes(approach)) {
+                coveredMap[sub.username].add(approach);
               }
             });
           }

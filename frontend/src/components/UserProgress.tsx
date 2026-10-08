@@ -32,19 +32,36 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
       
       <div className="flex flex-col gap-4">
         {usernames.map(username => {
-          // Find all submission dates for this user
-          const userSubDates = new Set(
-            submissions
-              .filter(s => s.username === username)
-              .map(s => s.date)
-          );
+          // Find all submission dates for this user within the Winter Arc
+          const userSubs = submissions.filter(s => s.username === username && s.date >= '2026-10-01' && s.date <= '2026-12-31');
+          const userSubDates = new Set(userSubs.map(s => s.date));
 
+          // Calculate total score: max 1 per day to avoid duplicates
+          let totalScore = 0;
+          const scoreByDate: Record<string, number> = {};
+          userSubs.forEach(s => {
+            if (s.analysis && s.analysis.aggregatedScore) {
+              const currentMax = scoreByDate[s.date] || 0;
+              scoreByDate[s.date] = Math.max(currentMax, s.analysis.aggregatedScore);
+            }
+          });
+          
+          Object.values(scoreByDate).forEach(score => {
+            totalScore += score;
+          });
 
           return (
             <div key={username} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-300">
-                <img src={avatars[username]} alt={username} className="w-5 h-5 rounded-full object-cover border border-white/20" />
-                {username}
+              <div className="flex items-center justify-between text-sm font-semibold text-slate-300">
+                <div className="flex items-center gap-2">
+                  <img src={avatars[username]} alt={username} className="w-5 h-5 rounded-full object-cover border border-white/20" />
+                  {username}
+                </div>
+                {totalScore > 0 && (
+                  <div className="text-[10px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded font-bold border border-indigo-500/20">
+                    {totalScore.toFixed(1)} pts
+                  </div>
+                )}
               </div>
               <div className="flex gap-[2px]">
                 {days.map((dateStr, idx) => {
