@@ -6,14 +6,25 @@ import { collection, getDocs } from 'firebase/firestore';
 import { Users as UsersIcon, ExternalLink, Code2, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { Check, X } from 'lucide-react';
+
 interface User {
   username: string;
   displayName: string;
   createdAt: string;
 }
 
+const TOPICS = [
+  "Brute Force", "Two Pointers", "Hashing", "Prefix Suffix", "Searching",
+  "Sorting", "Stack", "Queue", "Linked List", "Recursion", "Backtracking",
+  "Trees", "Heap Priority Queue", "Greedy", "Graphs", "Dynamic Programming",
+  "Divide and Conquer", "Bit Manipulation", "String Algorithms", "Mathematics",
+  "Range Queries", "Advanced Data Structures", "Computational Geometry", "Advanced Techniques"
+];
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [coveredTopics, setCoveredTopics] = useState<Record<string, Set<string>>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +33,26 @@ export default function UsersPage() {
         const snapshot = await getDocs(collection(db, 'users'));
         const data = snapshot.docs.map(doc => doc.data() as User);
         setUsers(data);
+
+        // Fetch submissions to calculate covered topics
+        const subSnap = await getDocs(collection(db, 'submissions'));
+        const subData = subSnap.docs.map(doc => doc.data());
+        
+        const coveredMap: Record<string, Set<string>> = {};
+        data.forEach(u => coveredMap[u.username] = new Set());
+
+        subData.forEach(sub => {
+          if (sub.username && sub.analysis && sub.analysis.approachesUsed) {
+            sub.analysis.approachesUsed.forEach((approach: string) => {
+              // Extract the top level topic like "Hashing" from "DSA / Hashing / Hash Map"
+              const parts = approach.split(' / ');
+              if (parts.length >= 2) {
+                coveredMap[sub.username].add(parts[1]);
+              }
+            });
+          }
+        });
+        setCoveredTopics(coveredMap);
       } catch (err) {
         console.error('Failed to fetch users:', err);
       } finally {
@@ -93,12 +124,39 @@ export default function UsersPage() {
                 </div>
               </div>
 
+              {/* Topics Grid */}
+              <div className="mt-2 border-t border-white/5 pt-4">
+                <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center justify-between">
+                  Topic Coverage
+                  <span className="text-xs text-slate-500 font-normal">
+                    {coveredTopics[user.username]?.size || 0} / {TOPICS.length}
+                  </span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {coveredTopics[user.username] && coveredTopics[user.username].size > 0 ? (
+                    Array.from(coveredTopics[user.username]).map(topic => (
+                      <div 
+                        key={topic} 
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      >
+                        <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{topic}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full text-center py-4 text-xs text-slate-500 italic bg-white/5 rounded-xl border border-white/5">
+                      No topics covered yet
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* LeetCode link */}
               <a
                 href={`https://leetcode.com/${user.username}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-80"
+                className="flex items-center justify-center gap-2 py-3 mt-2 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-80"
                 style={{ background: 'rgba(255,161,22,0.1)', border: '1px solid rgba(255,161,22,0.2)', color: '#ffa116' }}
               >
                 <ExternalLink className="w-4 h-4" />

@@ -39,20 +39,6 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
               .map(s => s.date)
           );
 
-          // Extract unique topics covered by this user
-          const topicsCovered = new Set<string>();
-          submissions
-            .filter(s => s.username === username)
-            .forEach(s => {
-              if (s.analysis && s.analysis.approachesUsed) {
-                s.analysis.approachesUsed.forEach((approach: string) => {
-                  // The approach is like "DSA / Hashing / Hash Map"
-                  // Let's grab the last part for brevity
-                  const parts = approach.split(' / ');
-                  topicsCovered.add(parts[parts.length - 1]);
-                });
-              }
-            });
 
           return (
             <div key={username} className="flex flex-col gap-2">
@@ -79,18 +65,6 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
                     />
                   );
                 })}
-              </div>
-              
-              {/* Topics Covered */}
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {Array.from(topicsCovered).map(topic => (
-                  <span key={topic} className="px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 whitespace-nowrap">
-                    {topic}
-                  </span>
-                ))}
-                {topicsCovered.size === 0 && (
-                  <span className="text-[10px] text-slate-500 italic px-1">No topics covered yet</span>
-                )}
               </div>
             </div>
           );

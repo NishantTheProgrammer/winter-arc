@@ -47,7 +47,10 @@ export default function SubmissionsPage() {
       try {
         const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'));
         const snapshot = await getDocs(q);
-        setSubmissions(snapshot.docs.map(d => d.data() as Submission));
+        const rawData = snapshot.docs.map(d => d.data() as Submission);
+        // Only show submissions within the Winter Arc (Oct-Dec 2026)
+        const winterArcData = rawData.filter(sub => sub.date >= '2026-10-01' && sub.date <= '2026-12-31');
+        setSubmissions(winterArcData);
 
         // Fetch participants for avatars
         const partSnap = await getDocs(collection(db, 'participants'));
