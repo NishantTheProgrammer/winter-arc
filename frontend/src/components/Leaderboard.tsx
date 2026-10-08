@@ -33,10 +33,11 @@ interface LeaderboardProps {
   date: string;
   daySubmissions?: any[];
   avatars?: Record<string, string>;
+  qotdSlug?: string;
   onRowClick?: (username: string) => void;
 }
 
-export default function Leaderboard({ date, daySubmissions, avatars, onRowClick }: LeaderboardProps) {
+export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, onRowClick }: LeaderboardProps) {
   const [scores, setScores] = useState<UserScore[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +51,7 @@ export default function Leaderboard({ date, daySubmissions, avatars, onRowClick 
         const snap = await getDocs(q);
         const todayDocs = snap.docs
           .map(d => d.data())
-          .filter(d => d.date === date);
+          .filter(d => d.date === date && (!qotdSlug || d.titleSlug === qotdSlug));
 
         if (todayDocs.length > 0) {
           setScores(todayDocs.map(d => ({

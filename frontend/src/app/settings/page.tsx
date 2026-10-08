@@ -76,7 +76,7 @@ export default function SettingsPage() {
         <section className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl">
           <h2 className="text-lg font-bold text-white mb-4">Appearance / Theme</h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {THEMES.map((t) => {
               const isActive = theme === t.id;
               return (
@@ -89,29 +89,66 @@ export default function SettingsPage() {
                     isActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5 hover:bg-white/10'
                   }`}
                 >
-                  {/* Color Preview Swatch */}
                   <div 
-                    className="w-12 h-12 rounded-lg shrink-0 shadow-inner"
+                    className="w-10 h-10 rounded-lg shrink-0 shadow-inner"
                     style={{ background: `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})` }}
                   />
-                  
                   <div className="flex-1 min-w-0">
                     <h3 className={`font-bold text-sm ${isActive ? 'text-indigo-300' : 'text-slate-200'}`}>
                       {t.name}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      {t.description}
-                    </p>
                   </div>
-
                   {isActive && (
-                    <div className="absolute top-4 right-4 text-indigo-400">
-                      <CheckCircle2 className="w-5 h-5" />
+                    <div className="absolute top-3 right-3 text-indigo-400">
+                      <CheckCircle2 className="w-4 h-4" />
                     </div>
                   )}
                 </motion.button>
               );
             })}
+          </div>
+        </section>
+
+        {/* Preferences Section (UI Placeholders for now) */}
+        <section className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl">
+          <h2 className="text-lg font-bold text-white mb-4">Dashboard Preferences</h2>
+          
+          <div className="space-y-4">
+            {/* Toggle 1 */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5">
+              <div>
+                <h3 className="font-bold text-slate-200 text-sm">Compact Layout</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Reduce padding and spacing in the UI to fit more data.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+              </label>
+            </div>
+
+            {/* Toggle 2 */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5">
+              <div>
+                <h3 className="font-bold text-slate-200 text-sm">Reduced Animations</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Disable UI hover effects and page transitions for performance.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+              </label>
+            </div>
+
+            {/* Toggle 3 */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5">
+              <div>
+                <h3 className="font-bold text-slate-200 text-sm">Hide Leaderboard on Mobile</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Move the leaderboard below the fold on smaller screens.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+              </label>
+            </div>
           </div>
         </section>
       </div>

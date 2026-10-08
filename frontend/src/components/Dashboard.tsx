@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [avatars, setAvatars] = useState<Record<string, string>>({});
   const [selectedSub, setSelectedSub] = useState<any | null>(null);
+  const [qotdMap, setQotdMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
     async function fetchData() {
@@ -38,10 +39,10 @@ export default function Dashboard() {
       const subSnap = await getDocs(collection(db, 'submissions'));
       const rawSubmissions = subSnap.docs.map(doc => doc.data());
 
-      // Deduplicate: keep only the latest submission per user per question
+      // Deduplicate: keep only the latest submission per user per question PER DAY to preserve streaks
       const uniqueSubs = new Map();
       for (const sub of rawSubmissions) {
-        const key = `${sub.username}_${sub.titleSlug}`;
+        const key = `${sub.username}_${sub.titleSlug}_${sub.date}`;
         if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key).timestamp) {
           uniqueSubs.set(key, sub);
         }
@@ -58,16 +59,26 @@ export default function Dashboard() {
         }
       });
       setAvatars(avatarMap);
+
+      // Fetch QOTD
+      const qotdSnapshot = await getDocs(collection(db, 'qotd'));
+      const qMap: Record<string, any> = {};
+      qotdSnapshot.docs.forEach(d => {
+        qMap[d.id] = d.data();
+      });
+      setQotdMap(qMap);
     }
     fetchData();
   }, []);
 
   // Filter submissions for the currently selected date
   const daySubmissions = submissions.filter(s => s.date === selectedDate);
-  // Get the problem statement and title from any submission on this day (assuming 1 problem/day)
-  const firstSubWithContext = daySubmissions.find(s => s.questionContext);
+  const todayQotd = qotdMap[selectedDate];
+
+  // Get the problem statement and title, prioritizing the QOTD
+  const firstSubWithContext = daySubmissions.find(s => s.questionContext && (!todayQotd || s.titleSlug === todayQotd.titleSlug)) || daySubmissions.find(s => s.questionContext);
   const problemStatement = firstSubWithContext?.questionContext;
-  const problemTitle = firstSubWithContext?.title;
+  const problemTitle = todayQotd?.title || firstSubWithContext?.title;
 
   if (!mounted) return null; // Avoid rendering until client-side hydration completes
 
@@ -75,15 +86,22 @@ export default function Dashboard() {
     <div className="flex flex-col xl:flex-row gap-8 items-start w-full">
       <div className="w-full xl:w-[420px] flex flex-col gap-6 items-center">
         <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
-        <UserProgress submissions={submissions} avatars={avatars} />
+        <UserProgress submissions={submissions} avatars={avatars} qotdMap={qotdMap} />
       </div>
       <div className="flex-1 w-full flex flex-col gap-8">
         <Leaderboard 
           date={selectedDate} 
           daySubmissions={daySubmissions}
           avatars={avatars}
+          qotdSlug={todayQotd?.titleSlug}
           onRowClick={(username) => {
-            const sub = daySubmissions.find(s => s.username === username);
+            let sub;
+            if (todayQotd) {
+              sub = daySubmissions.find(s => s.username === username && s.titleSlug === todayQotd.titleSlug);
+            }
+            if (!sub) {
+              sub = daySubmissions.find(s => s.username === username);
+            }
             if (sub) setSelectedSub(sub);
           }}
         />

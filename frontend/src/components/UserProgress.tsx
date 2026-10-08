@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 interface UserProgressProps {
   submissions: any[];
   avatars: Record<string, string>;
+  qotdMap?: Record<string, any>;
 }
 
-export default function UserProgress({ submissions, avatars }: UserProgressProps) {
+export default function UserProgress({ submissions, avatars, qotdMap }: UserProgressProps) {
   const startDate = new Date(2026, 9, 1);  // Oct 1
   const endDate   = new Date(2026, 11, 31); // Dec 31
   const today     = new Date();
@@ -34,11 +35,22 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
           const userSubs = submissions.filter(
             s => s.username === username && s.date >= '2026-10-01' && s.date <= '2026-12-31'
           );
-          const userSubDates = new Set(userSubs.map(s => s.date));
+
+          // Strictly filter to only count the Question of the Day
+          const validSubs = userSubs.filter(s => {
+            if (!qotdMap) return true;
+            const todayQotd = qotdMap[s.date];
+            if (todayQotd) {
+              return s.titleSlug === todayQotd.titleSlug;
+            }
+            return true; // Fallback if QOTD data is missing for that day
+          });
+
+          const userSubDates = new Set(validSubs.map(s => s.date));
 
           let totalScore = 0;
           const scoreByDate: Record<string, number> = {};
-          userSubs.forEach(s => {
+          validSubs.forEach(s => {
             if (s.analysis && s.analysis.aggregatedScore) {
               const currentMax = scoreByDate[s.date] || 0;
               scoreByDate[s.date] = Math.max(currentMax, s.analysis.aggregatedScore);
