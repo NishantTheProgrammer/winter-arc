@@ -19,6 +19,7 @@ interface Submission {
   code?: string;
   language?: string;
   questionContext?: string;
+  analysis?: any;
 }
 
 const USER_COLORS: Record<string, string> = {
@@ -251,6 +252,48 @@ export default function SubmissionsPage() {
                       dangerouslySetInnerHTML={{ __html: selectedSub.questionContext }}
                     />
                   </details>
+                )}
+
+                {/* AI Analysis Report */}
+                {selectedSub.analyzed && selectedSub.analysis && (
+                  <div className="border border-indigo-500/30 bg-indigo-500/5 rounded-xl overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 border-b border-indigo-500/20 bg-indigo-500/10 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-indigo-400 font-bold">AI Analysis Report</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-indigo-300">Score:</span>
+                        <span className="text-lg font-black text-white">{selectedSub.analysis.aggregatedScore?.toFixed(1) || '0.0'}<span className="text-xs text-indigo-400">/10</span></span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-indigo-500/10">
+                      {/* Efficiency */}
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5 shadow-inner">
+                        <p className="text-xs font-semibold text-amber-400 mb-2 uppercase tracking-wider border-b border-amber-400/20 pb-1">Efficiency (40%)</p>
+                        <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Time:</span> <span className="text-white">{selectedSub.analysis.timeComplexityScore}/10</span></div>
+                        <div className="flex justify-between text-xs"><span className="text-slate-400">Space:</span> <span className="text-white">{selectedSub.analysis.spaceComplexityScore}/10</span></div>
+                      </div>
+                      {/* Quality */}
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5 shadow-inner">
+                        <p className="text-xs font-semibold text-emerald-400 mb-2 uppercase tracking-wider border-b border-emerald-400/20 pb-1">Quality (20%)</p>
+                        <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Readability:</span> <span className="text-white">{selectedSub.analysis.readabilityScore}/10</span></div>
+                        <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Maintainability:</span> <span className="text-white">{selectedSub.analysis.maintainabilityScore}/10</span></div>
+                        <div className="flex justify-between text-xs"><span className="text-slate-400">Simplicity:</span> <span className="text-white">{selectedSub.analysis.simplicityScore}/10</span></div>
+                      </div>
+                      {/* Robustness */}
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5 shadow-inner">
+                        <p className="text-xs font-semibold text-pink-400 mb-2 uppercase tracking-wider border-b border-pink-400/20 pb-1">Robustness (15%)</p>
+                        <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Edge Cases:</span> <span className="text-white">{selectedSub.analysis.edgeCasesScore}/10</span></div>
+                        <div className="flex justify-between text-xs"><span className="text-slate-400">Error Handling:</span> <span className="text-white">{selectedSub.analysis.errorHandlingScore}/10</span></div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-black/10">
+                      <p className="text-xs font-semibold text-indigo-300 mb-2 uppercase tracking-wider">AI Feedback</p>
+                      <p className="text-sm text-slate-300 leading-relaxed italic border-l-2 border-indigo-500/50 pl-3">"{selectedSub.analysis.feedback}"</p>
+                    </div>
+                  </div>
                 )}
 
                 {/* Code Viewer */}

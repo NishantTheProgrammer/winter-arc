@@ -39,6 +39,7 @@ export async function processSubmission(submissionId: string, code: string, lang
     questionContext,
     code,
     language: lang,
+    analyzed: true,
     analysis: {
       timeComplexityScore: finalState.timeComplexityScore,
       spaceComplexityScore: finalState.spaceComplexityScore,
@@ -52,7 +53,7 @@ export async function processSubmission(submissionId: string, code: string, lang
       feedback: finalState.feedback,
     },
     analyzedAt: new Date().toISOString()
-  });
+  }, { merge: true });
 
   return finalState;
 }
