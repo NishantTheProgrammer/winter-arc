@@ -7,36 +7,34 @@ interface UserProgressProps {
 }
 
 export default function UserProgress({ submissions, avatars }: UserProgressProps) {
-  // Winter arc is Oct 1 to Dec 31, 2026
-  const startDate = new Date(2026, 9, 1); // Oct 1
-  const endDate = new Date(2026, 11, 31); // Dec 31
-  const today = new Date();
+  const startDate = new Date(2026, 9, 1);  // Oct 1
+  const endDate   = new Date(2026, 11, 31); // Dec 31
+  const today     = new Date();
 
   // Generate all 92 days
   const days: string[] = [];
   let d = new Date(startDate);
   while (d <= endDate) {
     const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getDate()).padStart(2, '0');
     days.push(`${yyyy}-${mm}-${dd}`);
     d.setDate(d.getDate() + 1);
   }
 
-  // Get unique usernames from avatars
   const usernames = Object.keys(avatars);
 
   return (
-    <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white flex flex-col gap-5">
-      <h3 className="font-bold text-lg text-slate-200">Winter Arc Progress</h3>
-      
+    <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 text-white flex flex-col gap-4 sm:gap-5">
+      <h3 className="font-bold text-base sm:text-lg text-slate-200">Winter Arc Progress</h3>
+
       <div className="flex flex-col gap-4">
         {usernames.map(username => {
-          // Find all submission dates for this user within the Winter Arc
-          const userSubs = submissions.filter(s => s.username === username && s.date >= '2026-10-01' && s.date <= '2026-12-31');
+          const userSubs = submissions.filter(
+            s => s.username === username && s.date >= '2026-10-01' && s.date <= '2026-12-31'
+          );
           const userSubDates = new Set(userSubs.map(s => s.date));
 
-          // Calculate total score: max 1 per day to avoid duplicates
           let totalScore = 0;
           const scoreByDate: Record<string, number> = {};
           userSubs.forEach(s => {
@@ -45,40 +43,44 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
               scoreByDate[s.date] = Math.max(currentMax, s.analysis.aggregatedScore);
             }
           });
-          
-          Object.values(scoreByDate).forEach(score => {
-            totalScore += score;
-          });
+          Object.values(scoreByDate).forEach(score => { totalScore += score; });
 
           return (
             <div key={username} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-sm font-semibold text-slate-300">
-                <div className="flex items-center gap-2">
-                  <img src={avatars[username]} alt={username} className="w-5 h-5 rounded-full object-cover border border-white/20" />
-                  {username}
+              {/* Name row */}
+              <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-300">
+                <div className="flex items-center gap-2 min-w-0">
+                  <img
+                    src={avatars[username]}
+                    alt={username}
+                    className="w-5 h-5 rounded-full object-cover border border-white/20 shrink-0"
+                  />
+                  <span className="truncate">{username}</span>
                 </div>
                 {totalScore > 0 && (
-                  <div className="text-[10px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded font-bold border border-indigo-500/20">
+                  <div className="text-[10px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded font-bold border border-indigo-500/20 shrink-0 ml-2">
                     {totalScore.toFixed(1)} pts
                   </div>
                 )}
               </div>
-              <div className="flex gap-[2px]">
-                {days.map((dateStr, idx) => {
-                  const dateObj = new Date(dateStr);
+
+              {/* Activity heatmap — overflow hidden so it never breaks layout */}
+              <div className="flex gap-[2px] overflow-hidden">
+                {days.map(dateStr => {
+                  const dateObj  = new Date(dateStr);
                   const isFuture = dateObj > today;
                   const submitted = userSubDates.has(dateStr);
 
-                  let bgColor = 'bg-white/5'; // future or unstarted
+                  let bgColor = 'bg-white/5';
                   if (!isFuture) {
                     bgColor = submitted ? 'bg-emerald-500' : 'bg-rose-500';
                   }
 
                   return (
-                    <div 
+                    <div
                       key={dateStr}
                       title={`${dateStr}: ${submitted ? 'Submitted' : isFuture ? 'Upcoming' : 'Missed'}`}
-                      className={`h-4 flex-1 rounded-[1px] ${bgColor} opacity-80 hover:opacity-100 transition-opacity`}
+                      className={`h-3 sm:h-4 flex-1 rounded-[1px] ${bgColor} opacity-80 hover:opacity-100 transition-opacity`}
                     />
                   );
                 })}

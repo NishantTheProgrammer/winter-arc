@@ -16,7 +16,7 @@ interface CalendarProps {
 
 const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
   const [currentDate, setCurrentDate] = useState(() => {
-    const [y, m, d] = selectedDate.split('-');
+    const [y, m] = selectedDate.split('-');
     return new Date(parseInt(y), parseInt(m) - 1, 1);
   });
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -24,11 +24,9 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch submissions
       const subSnap = await getDocs(collection(db, 'submissions'));
       setSubmissions(subSnap.docs.map(doc => doc.data()));
 
-      // Fetch participants for avatars
       const partSnap = await getDocs(collection(db, 'participants'));
       const avatarMap: Record<string, string> = {};
       partSnap.docs.forEach(doc => {
@@ -53,7 +51,7 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
       setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     }
   };
-  
+
   const nextMonth = () => {
     if (currentDate < MAX_DATE) {
       setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -64,24 +62,27 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const daySubs = submissions.filter(s => s.date === dateStr && s.analysis && s.analysis.aggregatedScore != null);
     if (daySubs.length === 0) return null;
-    return daySubs.reduce((prev, current) => (prev.analysis.aggregatedScore > current.analysis.aggregatedScore) ? prev : current);
+    return daySubs.reduce((prev, current) =>
+      (prev.analysis.aggregatedScore > current.analysis.aggregatedScore) ? prev : current
+    );
   };
 
   return (
-    <div className="glass rounded-2xl p-6 text-white w-full max-w-md">
-      <div className="flex justify-between items-center mb-6">
-        <button 
-          onClick={prevMonth} 
+    <div className="glass rounded-2xl p-4 sm:p-6 text-white w-full">
+      {/* Month navigation */}
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <button
+          onClick={prevMonth}
           disabled={currentDate <= MIN_DATE}
           className={`p-2 rounded-full transition-colors ${currentDate <= MIN_DATE ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10'}`}
         >
           <ChevronLeft className="w-5 h-5 text-gray-300" />
         </button>
-        <h2 className="text-lg font-bold tracking-wide">
+        <h2 className="text-base sm:text-lg font-bold tracking-wide">
           {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </h2>
-        <button 
-          onClick={nextMonth} 
+        <button
+          onClick={nextMonth}
           disabled={currentDate >= MAX_DATE}
           className={`p-2 rounded-full transition-colors ${currentDate >= MAX_DATE ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10'}`}
         >
@@ -89,38 +90,44 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 mb-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">
-        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <div key={day}>{day}</div>)}
+      {/* Day-of-week headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+          <div key={day}>{day}</div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-center">
-        {padding.map(p => <div key={`pad-${p}`} className="h-10 w-10 md:h-12 md:w-12"></div>)}
+      {/* Day cells — fluid sizing via aspect-square + w-full */}
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {padding.map(p => (
+          <div key={`pad-${p}`} className="aspect-square" />
+        ))}
         {days.map(day => {
           const winner = getWinnerForDay(day);
           const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isSelected = selectedDate === dateStr;
-          
+
           return (
-            <motion.div 
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              key={day} 
+              key={day}
               onClick={() => onSelectDate(dateStr)}
-              className={`relative h-10 w-10 md:h-12 md:w-12 flex items-center justify-center rounded-xl text-sm font-semibold cursor-pointer transition-all ${
-                isSelected ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-[#0f0f1e] scale-105 z-20 ' : ''
+              className={`relative aspect-square flex items-center justify-center rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold cursor-pointer transition-all ${
+                isSelected ? 'ring-2 ring-indigo-400 ring-offset-1 ring-offset-[#0f0f1e] scale-105 z-20' : ''
               } ${
-                winner 
-                  ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-100 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
+                winner
+                  ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-100 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
                   : 'bg-white/5 border border-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
               }`}
             >
-              <span>{day}</span>
+              <span className="leading-none">{day}</span>
               {winner && avatars[winner.username] && (
-                <img 
-                  src={avatars[winner.username]} 
+                <img
+                  src={avatars[winner.username]}
                   alt={winner.username}
                   title={`${winner.username} won with ${winner.analysis.aggregatedScore.toFixed(1)}/10`}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 md:w-6 md:h-6 rounded-full border border-indigo-500 shadow-md object-cover z-10 bg-[#1e1e1e]"
+                  className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-indigo-500 shadow-md object-cover z-10 bg-[#1e1e1e]"
                 />
               )}
             </motion.div>
