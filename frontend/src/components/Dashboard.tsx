@@ -10,6 +10,7 @@ import { AnimatePresence } from 'framer-motion';
 const Calendar = dynamic(() => import('./Calendar'), { ssr: false });
 const Leaderboard = dynamic(() => import('./Leaderboard'), { ssr: false });
 const SubmissionModal = dynamic(() => import('./SubmissionModal'), { ssr: false });
+const UserProgress = dynamic(() => import('./UserProgress'), { ssr: false });
 
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -52,8 +53,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-start w-full">
-      <div className="w-full xl:w-auto flex flex-col gap-6 items-center">
+      <div className="w-full xl:w-[420px] flex flex-col gap-6 items-center">
         <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <UserProgress submissions={submissions} avatars={avatars} />
       </div>
       <div className="flex-1 w-full flex flex-col gap-8">
         <Leaderboard 
