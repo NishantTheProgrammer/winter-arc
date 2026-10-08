@@ -25,9 +25,10 @@ const USER_THEME_COLORS: Record<string, string> = {
   nishanttheprogrammer: '99, 102, 241',
   mohittheprogrammer:   '245, 158, 11',
   surajsingh542:        '16, 185, 129',
+  harshit_sodhani:      '168, 85, 247',
 };
 
-const USERS = ['All', 'nishanttheprogrammer', 'mohittheprogrammer', 'surajsingh542'];
+const USERS = ['All', 'nishanttheprogrammer', 'mohittheprogrammer', 'surajsingh542', 'harshit_sodhani'];
 
 export default function SubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -42,7 +43,18 @@ export default function SubmissionsPage() {
         const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'));
         const snapshot = await getDocs(q);
         const rawData = snapshot.docs.map(d => d.data() as Submission);
-        const winterArcData = rawData.filter(sub => sub.date >= '2026-10-01' && sub.date <= '2026-12-31');
+        
+        // Deduplicate: keep only the latest submission per user per question
+        const uniqueSubs = new Map<string, Submission>();
+        for (const sub of rawData) {
+          const key = `${sub.username}_${sub.titleSlug}`;
+          if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key)!.timestamp) {
+            uniqueSubs.set(key, sub);
+          }
+        }
+        
+        const dedupedData = Array.from(uniqueSubs.values());
+        const winterArcData = dedupedData.filter(sub => sub.date >= '2026-10-01' && sub.date <= '2026-12-31');
         setSubmissions(winterArcData);
 
         const partSnap = await getDocs(collection(db, 'participants'));
@@ -64,7 +76,7 @@ export default function SubmissionsPage() {
   const filtered = filter === 'All' ? submissions : submissions.filter(s => s.username === filter);
 
   const getInitial = (username: string) =>
-    ({ nishanttheprogrammer: 'N', mohittheprogrammer: 'M', surajsingh542: 'S' }[username] ?? '?');
+    ({ nishanttheprogrammer: 'N', mohittheprogrammer: 'M', surajsingh542: 'S', harshit_sodhani: 'H' }[username] ?? username.charAt(0).toUpperCase());
 
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10">

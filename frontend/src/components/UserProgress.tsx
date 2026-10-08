@@ -22,7 +22,8 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
     d.setDate(d.getDate() + 1);
   }
 
-  const usernames = Object.keys(avatars);
+  // Get unique usernames from all submissions
+  const usernames = Array.from(new Set(submissions.map(s => s.username))).sort();
 
   return (
     <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 text-white flex flex-col gap-4 sm:gap-5">
@@ -50,11 +51,17 @@ export default function UserProgress({ submissions, avatars }: UserProgressProps
               {/* Name row */}
               <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-300">
                 <div className="flex items-center gap-2 min-w-0">
-                  <img
-                    src={avatars[username]}
-                    alt={username}
-                    className="w-5 h-5 rounded-full object-cover border border-white/20 shrink-0"
-                  />
+                  {avatars[username] ? (
+                    <img
+                      src={avatars[username]}
+                      alt={username}
+                      className="w-5 h-5 rounded-full object-cover border border-white/20 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-white/5 border border-white/20 flex items-center justify-center font-bold text-[10px] text-slate-400 shrink-0">
+                      {username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="truncate">{username}</span>
                 </div>
                 {totalScore > 0 && (

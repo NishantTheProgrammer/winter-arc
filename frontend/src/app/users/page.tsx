@@ -34,7 +34,17 @@ export default function UsersPage() {
         setUsers(data);
 
         const subSnap = await getDocs(collection(db, 'submissions'));
-        const subData = subSnap.docs.map(doc => doc.data());
+        const rawSubData = subSnap.docs.map(doc => doc.data());
+
+        // Deduplicate: keep only the latest submission per user per question
+        const uniqueSubs = new Map();
+        for (const sub of rawSubData) {
+          const key = `${sub.username}_${sub.titleSlug}`;
+          if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key).timestamp) {
+            uniqueSubs.set(key, sub);
+          }
+        }
+        const subData = Array.from(uniqueSubs.values());
 
         const coveredMap: Record<string, Set<string>> = {};
         data.forEach(u => (coveredMap[u.username] = new Set()));

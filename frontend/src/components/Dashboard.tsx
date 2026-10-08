@@ -36,7 +36,17 @@ export default function Dashboard() {
     async function fetchData() {
       // Fetch submissions
       const subSnap = await getDocs(collection(db, 'submissions'));
-      setSubmissions(subSnap.docs.map(doc => doc.data()));
+      const rawSubmissions = subSnap.docs.map(doc => doc.data());
+
+      // Deduplicate: keep only the latest submission per user per question
+      const uniqueSubs = new Map();
+      for (const sub of rawSubmissions) {
+        const key = `${sub.username}_${sub.titleSlug}`;
+        if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key).timestamp) {
+          uniqueSubs.set(key, sub);
+        }
+      }
+      setSubmissions(Array.from(uniqueSubs.values()));
 
       // Fetch participants for avatars
       const partSnap = await getDocs(collection(db, 'participants'));

@@ -14,6 +14,7 @@ const USER_THEME_COLORS: Record<string, string> = {
   nishanttheprogrammer: '99, 102, 241',
   mohittheprogrammer:   '245, 158, 11',
   surajsingh542:        '16, 185, 129',
+  harshit_sodhani:      '168, 85, 247',
 };
 
 export default function SubmissionModal({ selectedSub, setSelectedSub, submissions, avatars }: SubmissionModalProps) {
