@@ -13,12 +13,20 @@ const SubmissionModal = dynamic(() => import('./SubmissionModal'), { ssr: false 
 const UserProgress = dynamic(() => import('./UserProgress'), { ssr: false });
 
 export default function Dashboard() {
-  const [selectedDate, setSelectedDate] = useState(() => {
+  const [selectedDate, setSelectedDate] = useState('2026-10-01');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
     const today = new Date();
-    if (today < new Date(2026, 9, 1)) return '2026-10-01';
-    if (today > new Date(2026, 11, 31)) return '2026-12-31';
-    return today.toISOString().split('T')[0];
-  });
+    if (today < new Date(2026, 9, 1)) {
+      setSelectedDate('2026-10-01');
+    } else if (today > new Date(2026, 11, 31)) {
+      setSelectedDate('2026-12-31');
+    } else {
+      setSelectedDate(today.toISOString().split('T')[0]);
+    }
+  }, []);
 
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [avatars, setAvatars] = useState<Record<string, string>>({});
@@ -50,6 +58,8 @@ export default function Dashboard() {
   const firstSubWithContext = daySubmissions.find(s => s.questionContext);
   const problemStatement = firstSubWithContext?.questionContext;
   const problemTitle = firstSubWithContext?.title;
+
+  if (!mounted) return null; // Avoid rendering until client-side hydration completes
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-start w-full">
