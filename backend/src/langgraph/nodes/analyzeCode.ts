@@ -9,11 +9,25 @@ const llm = new ChatOllama({
 
 export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentState>> => {
   const prompt = `
-    Analyze the following code for Time Complexity, Space Complexity, and Readability.
-    Provide a score out of 10 for each.
+    Analyze the following code across 3 major categories. Provide a score out of 10 for each sub-category:
+
+    1. Algorithmic Efficiency
+       - timeComplexityScore (out of 10)
+       - spaceComplexityScore (out of 10)
+    2. Code Quality
+       - readabilityScore (out of 10)
+       - maintainabilityScore (out of 10)
+       - simplicityScore (out of 10)
+    3. Correctness & Robustness
+       - edgeCasesScore (out of 10)
+       - errorHandlingScore (out of 10)
+
     Provide a concise feedback string explaining the scores.
 
-    Code (${state.lang}):
+    ==== PROBLEM CONTEXT ====
+    ${state.questionContext.substring(0, 1500)} // Truncated to avoid token limits if too long
+
+    ==== SUBMITTED CODE (${state.lang}) ====
     ${state.code}
 
     Output valid JSON strictly in the following format:
@@ -21,6 +35,10 @@ export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentS
       "timeComplexityScore": number,
       "spaceComplexityScore": number,
       "readabilityScore": number,
+      "maintainabilityScore": number,
+      "simplicityScore": number,
+      "edgeCasesScore": number,
+      "errorHandlingScore": number,
       "feedback": "string"
     }
   `;
@@ -35,6 +53,10 @@ export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentS
       timeComplexityScore: parsed.timeComplexityScore || 0,
       spaceComplexityScore: parsed.spaceComplexityScore || 0,
       readabilityScore: parsed.readabilityScore || 0,
+      maintainabilityScore: parsed.maintainabilityScore || 0,
+      simplicityScore: parsed.simplicityScore || 0,
+      edgeCasesScore: parsed.edgeCasesScore || 0,
+      errorHandlingScore: parsed.errorHandlingScore || 0,
       feedback: parsed.feedback || "No feedback provided.",
     };
   } catch (error) {
@@ -43,6 +65,10 @@ export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentS
       timeComplexityScore: 0,
       spaceComplexityScore: 0,
       readabilityScore: 0,
+      maintainabilityScore: 0,
+      simplicityScore: 0,
+      edgeCasesScore: 0,
+      errorHandlingScore: 0,
       feedback: "Failed to analyze code.",
     };
   }

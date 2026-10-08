@@ -129,3 +129,27 @@ export async function getQuestionOfTheDay(): Promise<any> {
     return null;
   }
 }
+
+/**
+ * Fetch problem context (description, constraints) by titleSlug
+ */
+export async function getQuestionData(titleSlug: string): Promise<string | null> {
+  const query = `
+    query questionData($titleSlug: String!) {
+      question(titleSlug: $titleSlug) {
+        content
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(LEETCODE_API_URL, {
+      query,
+      variables: { titleSlug }
+    });
+    return response.data.data.question.content;
+  } catch (error) {
+    console.error(`Error fetching question data for ${titleSlug}:`, error);
+    return null;
+  }
+}

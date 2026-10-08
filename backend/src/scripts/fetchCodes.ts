@@ -1,5 +1,6 @@
 import { db } from '../firebase/config';
 import axios from 'axios';
+import { getQuestionData } from '../leetcode/client';
 
 const LEETCODE_SESSION = process.env.LEETCODE_SESSION;
 const CSRF_TOKEN = process.env.LEETCODE_CSRF_TOKEN;
@@ -25,8 +26,8 @@ async function fetchCodesInBatches() {
     .map(doc => ({ docId: doc.id, ...doc.data() as any }))
     .filter(sub => {
       const isAfterCutoff = parseInt(sub.timestamp) >= CUTOFF_TIMESTAMP;
-      const hasNoCode = !sub.code;
-      return isAfterCutoff && hasNoCode;
+      const needsData = !sub.code || !sub.questionContext;
+      return isAfterCutoff && needsData;
     });
 
   console.log(`Found ${missingCode.length} submissions to fetch (after Oct 1st 2026).`);
@@ -47,22 +48,31 @@ async function fetchCodesInBatches() {
     let queryArgs = [];
 
     batch.forEach((sub, index) => {
-      const alias = `sub${index}`;
-      const varName = `$id${index}`;
-      
-      queryArgs.push(`${varName}: ID!`);
+      // For Code
+      const subAlias = `sub${index}`;
+      const idVarName = `$id${index}`;
+      queryArgs.push(`${idVarName}: ID!`);
       variables[`id${index}`] = sub.submissionId;
       
+      // For Question Context
+      const qAlias = `q${index}`;
+      const slugVarName = `$slug${index}`;
+      queryArgs.push(`${slugVarName}: String!`);
+      variables[`slug${index}`] = sub.titleSlug;
+      
       queryLines.push(`
-        ${alias}: submissionDetails(submissionIdV2: ${varName}) {
+        ${subAlias}: submissionDetails(submissionIdV2: ${idVarName}) {
           code
           lang { name }
+        }
+        ${qAlias}: question(titleSlug: ${slugVarName}) {
+          content
         }
       `);
     });
 
     const graphqlQuery = `
-      query fetchMultipleCodes(${queryArgs.join(', ')}) {
+      query fetchCodesAndQuestions(${queryArgs.join(', ')}) {
         ${queryLines.join('\n')}
       }
     `;
@@ -87,26 +97,28 @@ async function fetchCodesInBatches() {
 
       const data = response.data.data;
 
-      // 5. Update Firestore with the returned code
+      // 5. Update Firestore with the returned code and question context
       const firestoreBatch = db.batch();
       let successCount = 0;
 
-      batch.forEach((sub, index) => {
-        const alias = `sub${index}`;
-        const result = data[alias];
+      for (let index = 0; index < batch.length; index++) {
+        const sub = batch[index];
+        const subResult = data[`sub${index}`];
+        const qResult = data[`q${index}`];
 
-        if (result && result.code) {
+        if (subResult && subResult.code) {
           const docRef = db.collection('submissions').doc(sub.docId);
           firestoreBatch.update(docRef, {
-            code: result.code,
-            language: result.lang?.name || 'javascript'
+            code: subResult.code,
+            language: subResult.lang?.name || 'javascript',
+            questionContext: qResult?.content || "No description available"
           });
           successCount++;
-          console.log(`  ✅ Fetched: ${sub.titleSlug}`);
+          console.log(`  ✅ Fetched code & question: ${sub.titleSlug}`);
         } else {
           console.log(`  ❌ Failed (Access Denied): ${sub.titleSlug}`);
         }
-      });
+      }
 
       await firestoreBatch.commit();
       console.log(`💾 Saved ${successCount} codes to Firestore.`);

@@ -18,6 +18,7 @@ interface Submission {
   analyzed: boolean;
   code?: string;
   language?: string;
+  questionContext?: string;
 }
 
 const USER_COLORS: Record<string, string> = {
@@ -189,7 +190,34 @@ export default function SubmissionsPage() {
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
                 <div>
                   <h3 className="text-lg font-bold text-white">{selectedSub.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1">Submitted by @{selectedSub.username} on {selectedSub.date}</p>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <p className="text-xs text-slate-400">
+                      Submitted by <span className="font-semibold text-white">@{selectedSub.username}</span> on {selectedSub.date}
+                    </p>
+                    
+                    {/* Related Submissions Chips */}
+                    {submissions.filter(s => s.titleSlug === selectedSub.titleSlug && s.submissionId !== selectedSub.submissionId).length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">Also solved by:</span>
+                        {submissions
+                          .filter(s => s.titleSlug === selectedSub.titleSlug && s.submissionId !== selectedSub.submissionId)
+                          .map(otherSub => (
+                            <button
+                              key={otherSub.submissionId}
+                              onClick={() => setSelectedSub(otherSub)}
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-transform hover:scale-105"
+                              style={{ 
+                                background: USER_COLORS[otherSub.username] || 'rgba(99,102,241,0.5)',
+                                color: 'white',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                              }}
+                            >
+                              @{otherSub.username}
+                            </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <a
@@ -209,16 +237,34 @@ export default function SubmissionsPage() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto p-4 bg-[#1e1e1e]">
+              <div className="flex-1 overflow-auto p-4 bg-[#1e1e1e] flex flex-col gap-4">
+                
+                {/* Problem Statement Collapsible */}
+                {selectedSub.questionContext && selectedSub.questionContext !== "No description available" && (
+                  <details className="group border border-white/10 bg-white/5 rounded-xl overflow-hidden">
+                    <summary className="px-4 py-3 cursor-pointer text-sm font-semibold text-slate-300 hover:text-white bg-white/5 select-none flex items-center justify-between">
+                      Problem Statement
+                      <span className="text-slate-500 transition-transform group-open:-rotate-180">▼</span>
+                    </summary>
+                    <div 
+                      className="p-4 text-sm text-slate-300 border-t border-white/10 bg-[#1e1e1e]/50 max-h-[300px] overflow-y-auto leetcode-content"
+                      dangerouslySetInnerHTML={{ __html: selectedSub.questionContext }}
+                    />
+                  </details>
+                )}
+
+                {/* Code Viewer */}
                 {selectedSub.code ? (
-                  <SyntaxHighlighter
-                    language={selectedSub.language || 'javascript'}
-                    style={vscDarkPlus}
-                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent', fontSize: '14px' }}
-                    showLineNumbers
-                  >
-                    {selectedSub.code}
-                  </SyntaxHighlighter>
+                  <div className="rounded-xl overflow-hidden border border-white/10 bg-[#1e1e1e]">
+                    <SyntaxHighlighter
+                      language={selectedSub.language || 'javascript'}
+                      style={vscDarkPlus}
+                      customStyle={{ margin: 0, padding: '1rem', background: 'transparent', fontSize: '14px' }}
+                      showLineNumbers
+                    >
+                      {selectedSub.code}
+                    </SyntaxHighlighter>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-48 text-slate-500 gap-3">
                     <FileCode2 className="w-10 h-10 opacity-50" />
