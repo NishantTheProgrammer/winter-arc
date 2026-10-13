@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
+import { calculateAggregatedScore } from '@/lib/scoreCalculator';
 
 const MIN_DATE = new Date(2026, 9, 1); // Oct 2026
 const MAX_DATE = new Date(2026, 11, 1); // Dec 2026
@@ -60,10 +61,10 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
 
   const getWinnerForDay = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const daySubs = submissions.filter(s => s.date === dateStr && s.analysis && s.analysis.aggregatedScore != null);
+    const daySubs = submissions.filter(s => s.date === dateStr && s.analysis);
     if (daySubs.length === 0) return null;
     return daySubs.reduce((prev, current) =>
-      (prev.analysis.aggregatedScore > current.analysis.aggregatedScore) ? prev : current
+      (calculateAggregatedScore(prev.analysis) > calculateAggregatedScore(current.analysis)) ? prev : current
     );
   };
 
@@ -126,7 +127,7 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
                 <img
                   src={avatars[winner.username]}
                   alt={winner.username}
-                  title={`${winner.username} won with ${winner.analysis.aggregatedScore.toFixed(1)}/10`}
+                  title={`${winner.username} won with ${calculateAggregatedScore(winner.analysis).toFixed(1)}/10`}
                   className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-indigo-500 shadow-md object-cover z-10 bg-[#1e1e1e]"
                 />
               )}

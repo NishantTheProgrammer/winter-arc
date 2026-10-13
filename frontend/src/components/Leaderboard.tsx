@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 import { resolveDisplayName, getUserTheme } from '@/lib/userTheme';
+import { calculateAggregatedScore } from '@/lib/scoreCalculator';
 
 interface UserScore {
   username: string;
@@ -67,8 +68,8 @@ export default function Leaderboard({
           userMap.set(sub.username, sub);
         } else {
           const existing = userMap.get(sub.username);
-          const existingScore = existing.analysis?.aggregatedScore ?? 0;
-          const currentScore = sub.analysis?.aggregatedScore ?? 0;
+          const existingScore = existing.analysis ? calculateAggregatedScore(existing.analysis) : 0;
+          const currentScore = sub.analysis ? calculateAggregatedScore(sub.analysis) : 0;
           if (currentScore > existingScore || (!existing.analyzed && sub.analyzed)) {
             userMap.set(sub.username, sub);
           }
@@ -76,14 +77,15 @@ export default function Leaderboard({
       }
 
       const parsedScores: UserScore[] = Array.from(userMap.values()).map(sub => {
-        const isAnalyzed = Boolean(sub.analyzed && sub.analysis && typeof sub.analysis.aggregatedScore === 'number');
+        const isAnalyzed = Boolean(sub.analyzed && sub.analysis);
+        const dynamicScore = isAnalyzed ? calculateAggregatedScore(sub.analysis) : 0;
         const rawApproach = sub.analysis?.approachesUsed?.[0] || sub.analysis?.approach || (isAnalyzed ? 'Optimized' : 'Not analyzed yet');
         const approach = typeof rawApproach === 'string' ? rawApproach.split(' > ')[0].trim() : 'Optimized';
 
         return {
           username: sub.username,
           displayName: sub.displayName || resolveDisplayName(sub.username, displayNames),
-          totalScore: isAnalyzed ? sub.analysis.aggregatedScore : 0,
+          totalScore: dynamicScore,
           timeScore: isAnalyzed ? (sub.analysis.timeComplexityScore ?? 0) : 0,
           spaceScore: isAnalyzed ? (sub.analysis.spaceComplexityScore ?? 0) : 0,
           readabilityScore: isAnalyzed ? (sub.analysis.readabilityScore ?? 0) : 0,

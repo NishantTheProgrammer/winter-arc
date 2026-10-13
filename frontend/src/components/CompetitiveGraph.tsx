@@ -2,8 +2,113 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, TrendingUp, Layers, Award, Check, Filter, Columns, Rows, Table, Info } from 'lucide-react';
+import {
+  Sparkles,
+  TrendingUp,
+  Layers,
+  Award,
+  Check,
+  Filter,
+  Columns,
+  Rows,
+  Table,
+  Info,
+  ChevronDown,
+  ChevronRight,
+  FolderPlus,
+  FolderMinus,
+  Zap,
+  Globe,
+  GitBranch,
+} from 'lucide-react';
 import { getUserTheme, UserTheme } from '@/lib/userTheme';
+import { calculateAggregatedScore } from '@/lib/scoreCalculator';
+import hierarchyData from '@/data/hierarchy.json';
+
+export interface HierarchyNode {
+  id: string; // full canonical path: "Two Pointers" or "Two Pointers > Sliding Window > Fixed Size"
+  name: string; // display label: "Fixed Size"
+  domain: string; // root domain: "Two Pointers"
+  parentPath: string | null;
+  depth: number;
+  children: HierarchyNode[];
+}
+
+function buildHierarchyTree(
+  obj: Record<string, any>,
+  domain = '',
+  parentPath: string | null = null,
+  depth = 0
+): HierarchyNode[] {
+  const nodes: HierarchyNode[] = [];
+  for (const [key, val] of Object.entries(obj)) {
+    const currentDomain = depth === 0 ? key : domain;
+    const currentPath = parentPath ? `${parentPath} > ${key}` : key;
+    let children: HierarchyNode[] = [];
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      children = buildHierarchyTree(val, currentDomain, currentPath, depth + 1);
+    }
+    nodes.push({
+      id: currentPath,
+      name: key,
+      domain: currentDomain,
+      parentPath,
+      depth,
+      children,
+    });
+  }
+  return nodes;
+}
+
+function flattenHierarchyTree(nodes: HierarchyNode[]): HierarchyNode[] {
+  const result: HierarchyNode[] = [];
+  function recurse(list: HierarchyNode[]) {
+    for (const item of list) {
+      result.push(item);
+      if (item.children.length > 0) {
+        recurse(item.children);
+      }
+    }
+  }
+  recurse(nodes);
+  return result;
+}
+
+const HIERARCHY_TREE: HierarchyNode[] = buildHierarchyTree(hierarchyData.DSA);
+const ALL_HIERARCHY_NODES: HierarchyNode[] = flattenHierarchyTree(HIERARCHY_TREE);
+const HIERARCHY_NODE_MAP: Map<string, HierarchyNode> = new Map();
+ALL_HIERARCHY_NODES.forEach(n => HIERARCHY_NODE_MAP.set(n.id, n));
+
+// Check if a node or any of its descendants has activity in teamTotals
+function nodeHasActiveDescendants(node: HierarchyNode, teamTotals: Record<string, number>): boolean {
+  for (const child of node.children) {
+    if ((teamTotals[child.id] || 0) > 0) return true;
+    if (nodeHasActiveDescendants(child, teamTotals)) return true;
+  }
+  return false;
+}
+
+// Get flattened descendants of a parent node according to active filter
+function getSubtreeNodes(
+  parent: HierarchyNode,
+  activeOnly: boolean,
+  teamTotals: Record<string, number>
+): HierarchyNode[] {
+  const list: HierarchyNode[] = [];
+  function recurse(node: HierarchyNode) {
+    for (const child of node.children) {
+      const isSelfActive = (teamTotals[child.id] || 0) > 0;
+      const hasActiveChild = nodeHasActiveDescendants(child, teamTotals);
+
+      if (!activeOnly || isSelfActive || hasActiveChild) {
+        list.push(child);
+        recurse(child);
+      }
+    }
+  }
+  recurse(parent);
+  return list;
+}
 
 interface CompetitiveGraphProps {
   users: Array<{ username: string; displayName: string; themeColor?: string }>;
@@ -29,10 +134,15 @@ export default function CompetitiveGraph({
   const [highlightedUser, setHighlightedUser] = useState<string | null>(null);
   const [matrixFilter, setMatrixFilter] = useState<'all' | 'covered' | 'uncovered'>('all');
   const [matrixOrientation, setMatrixOrientation] = useState<'topics-rows' | 'participants-rows'>('topics-rows');
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [activeSubtopicsOnly, setActiveSubtopicsOnly] = useState<boolean>(true);
+  const [participantColumnsView, setParticipantColumnsView] = useState<'domains' | 'active-techniques'>('domains');
   const [hoveredCell, setHoveredCell] = useState<{
     username: string;
     displayName: string;
     topic: string;
+    name: string;
+    depth: number;
     count: number;
     problems: string[];
   } | null>(null);
@@ -68,7 +178,7 @@ export default function CompetitiveGraph({
       let cumulative = 0;
       const points = timelineDates.map(date => {
         const match = submissions.find(s => s.username === user.username && s.date === date && s.analyzed);
-        const dayScore = match?.analysis?.aggregatedScore || 0;
+        const dayScore = match?.analysis ? calculateAggregatedScore(match.analysis) : 0;
         cumulative += dayScore;
         return {
           date,
@@ -85,51 +195,106 @@ export default function CompetitiveGraph({
     });
   }, [users, submissions, timelineDates]);
 
-  // Detailed Topic Problem counts & solved problem titles strictly matched to hierarchy
+  // Detailed Topic & Subtopic Problem counts strictly matched to hierarchy.json
+  // Leaf-first assignment with bottom-up post-order sum aggregation hierarchy-wise
   const topicStats = useMemo(() => {
     const stats: Record<string, Record<string, { count: number; problems: string[] }>> = {};
     users.forEach(u => {
       stats[u.username] = {};
-      hierarchyTopics.forEach(t => {
-        stats[u.username][t] = { count: 0, problems: [] };
+      ALL_HIERARCHY_NODES.forEach(node => {
+        stats[u.username][node.id] = { count: 0, problems: [] };
       });
     });
 
+    // Step 1: Assign ONLY to the deepest / most-nested matching node in the hierarchy
     submissions.forEach(sub => {
-      if (!sub.username || !sub.analyzed || !sub.analysis?.approachesUsed) return;
-      if (!stats[sub.username]) return;
+      if (!sub.username || !stats[sub.username] || !sub.analysis?.approachesUsed) return;
+      if (!sub.analyzed) return;
 
-      const matchedTopics = new Set<string>();
-      sub.analysis.approachesUsed.forEach((path: string) => {
-        const segments = path
-          .split(/\s*[>\/\->|,]\s*|\s+\-\s+/)
-          .map(s => s.trim())
-          .filter(Boolean);
+      const probTitle = sub.title || sub.titleSlug;
+      if (!probTitle) return;
 
-        for (const segment of segments) {
-          if (hierarchyTopics.includes(segment)) {
-            matchedTopics.add(segment);
-            break;
+      // Deduplicate approaches within the same submission
+      const uniqueApproaches = Array.from(new Set<string>(sub.analysis.approachesUsed));
+
+      uniqueApproaches.forEach((path: string) => {
+        const normalized = path.includes(' > ')
+          ? path
+          : path.replace(/\s*[>\/\->|,]\s*|\s+\-\s+/g, ' > ');
+        const segments = normalized.split(/\s*>\s*/).map(s => s.trim()).filter(Boolean);
+
+        // Find the deepest matching node in the hierarchy tree
+        let deepestNodeId: string | null = null;
+        let chain = '';
+        for (let i = 0; i < segments.length; i++) {
+          chain = i === 0 ? segments[i] : `${chain} > ${segments[i]}`;
+          if (HIERARCHY_NODE_MAP.has(chain)) {
+            deepestNodeId = chain;
+          }
+        }
+
+        // Fallback: standalone segment matching top domain
+        if (!deepestNodeId) {
+          for (const segment of segments) {
+            if (hierarchyTopics.includes(segment)) {
+              deepestNodeId = segment;
+              break;
+            }
+          }
+        }
+
+        if (deepestNodeId) {
+          let leafNode = HIERARCHY_NODE_MAP.get(deepestNodeId);
+          // Anchor consideration strictly at the deepest/leaf level:
+          // If an approach matched an intermediate node, resolve to its primary leaf descendant
+          while (leafNode && leafNode.children.length > 0) {
+            leafNode = leafNode.children[0];
+          }
+
+          if (leafNode) {
+            const item = stats[sub.username][leafNode.id];
+            item.count += 1;
+            if (!item.problems.includes(probTitle)) {
+              item.problems.push(probTitle);
+            }
           }
         }
       });
+    });
 
-      matchedTopics.forEach(topic => {
-        const item = stats[sub.username]?.[topic];
-        if (item) {
-          item.count += 1;
-          const probTitle = sub.title || sub.titleSlug;
-          if (probTitle && !item.problems.includes(probTitle)) {
-            item.problems.push(probTitle);
-          }
-        }
+    // Step 2: Post-order bottom-up tree aggregation:
+    // Only leaf levels hold base values; all parent nodes up to the root domain
+    // have counts strictly computed as the sum of their children!
+    function aggregateNode(node: HierarchyNode, username: string): { count: number; problems: string[] } {
+      const item = stats[username][node.id];
+      if (node.children.length === 0) {
+        return item;
+      }
+
+      let sumCount = 0; // Strictly 0 for parent nodes; parent is PURELY the sum of child counts
+      const allProbs = new Set<string>();
+
+      for (const child of node.children) {
+        const childRes = aggregateNode(child, username);
+        sumCount += childRes.count;
+        childRes.problems.forEach(p => allProbs.add(p));
+      }
+
+      item.count = sumCount;
+      item.problems = Array.from(allProbs);
+      return item;
+    }
+
+    users.forEach(u => {
+      HIERARCHY_TREE.forEach(root => {
+        aggregateNode(root, u.username);
       });
     });
 
     return stats;
   }, [users, submissions, hierarchyTopics]);
 
-  // Total unique problems solved per participant in the canonical hierarchy
+  // Total unique problems solved per participant across the 24 canonical root domains
   const userTotalHierarchyProblems = useMemo(() => {
     const totals: Record<string, number> = {};
     users.forEach(u => {
@@ -145,21 +310,21 @@ export default function CompetitiveGraph({
     return totals;
   }, [users, hierarchyTopics, topicStats]);
 
-  // Total unique problems solved across team per topic
+  // Total unique problems or total practice applications solved across team for every node in the entire hierarchy
   const topicTeamTotals = useMemo(() => {
     const totals: Record<string, number> = {};
-    hierarchyTopics.forEach(t => {
-      const topicProblems = new Set<string>();
+    ALL_HIERARCHY_NODES.forEach(node => {
+      let sum = 0;
       users.forEach(u => {
-        const item = topicStats[u.username]?.[t];
+        const item = topicStats[u.username]?.[node.id];
         if (item) {
-          item.problems.forEach(p => topicProblems.add(p));
+          sum += item.count;
         }
       });
-      totals[t] = topicProblems.size;
+      totals[node.id] = sum;
     });
     return totals;
-  }, [users, hierarchyTopics, topicStats]);
+  }, [users, topicStats]);
 
   // Dynamic GitHub-style commit cell weight style
   const getCellWeightStyle = (username: string, count: number) => {
@@ -218,9 +383,9 @@ export default function CompetitiveGraph({
   const userMetrics = useMemo(() => {
     return users.map(user => {
       const userSubs = submissions.filter(s => s.username === user.username);
-      const analyzed = userSubs.filter(s => s.analyzed && s.analysis && typeof s.analysis.aggregatedScore === 'number');
+      const analyzed = userSubs.filter(s => s.analyzed && s.analysis);
 
-      const totalScore = analyzed.reduce((acc, s) => acc + (s.analysis.aggregatedScore || 0), 0);
+      const totalScore = analyzed.reduce((acc, s) => acc + calculateAggregatedScore(s.analysis), 0);
       const avgScore = analyzed.length ? totalScore / analyzed.length : 0;
       const avgTime = analyzed.length ? analyzed.reduce((acc, s) => acc + (s.analysis.timeComplexityScore || 0), 0) / analyzed.length : 0;
       const avgSpace = analyzed.length ? analyzed.reduce((acc, s) => acc + (s.analysis.spaceComplexityScore || 0), 0) / analyzed.length : 0;
@@ -254,14 +419,48 @@ export default function CompetitiveGraph({
     return Math.ceil(maxVal / 20) * 20;
   }, [trajectoryData]);
 
-  // Filtered topics for Matrix view
-  const filteredTopics = useMemo(() => {
-    if (matrixFilter === 'all') return hierarchyTopics;
-    return hierarchyTopics.filter(topic => {
-      const isCoveredByAny = users.some(u => coveredTopics[u.username]?.has(topic));
-      return matrixFilter === 'covered' ? isCoveredByAny : !isCoveredByAny;
+  // Filtered root domains for Matrix view
+  const filteredDomains = useMemo(() => {
+    return HIERARCHY_TREE.filter(domain => {
+      const teamTotal = topicTeamTotals[domain.id] || 0;
+      if (matrixFilter === 'all') return true;
+      if (matrixFilter === 'covered') return teamTotal > 0;
+      return teamTotal === 0;
     });
-  }, [hierarchyTopics, matrixFilter, users, coveredTopics]);
+  }, [matrixFilter, topicTeamTotals]);
+
+  // Active technique nodes (depth > 0) with at least 1 solved problem across team
+  const activeTechniqueNodes = useMemo(() => {
+    return ALL_HIERARCHY_NODES.filter(n => n.depth > 0 && (topicTeamTotals[n.id] || 0) > 0);
+  }, [topicTeamTotals]);
+
+  // Total covered and gap counts for root domains
+  const coveredDomainsCount = useMemo(() => {
+    return HIERARCHY_TREE.filter(d => (topicTeamTotals[d.id] || 0) > 0).length;
+  }, [topicTeamTotals]);
+
+  const uncoveredDomainsCount = HIERARCHY_TREE.length - coveredDomainsCount;
+
+  // Toggle domain expand/collapse
+  const toggleDomain = (domainId: string) => {
+    setExpandedDomains(prev => {
+      const next = new Set(prev);
+      if (next.has(domainId)) {
+        next.delete(domainId);
+      } else {
+        next.add(domainId);
+      }
+      return next;
+    });
+  };
+
+  const expandAllDomains = () => {
+    setExpandedDomains(new Set(HIERARCHY_TREE.map(d => d.id)));
+  };
+
+  const collapseAllDomains = () => {
+    setExpandedDomains(new Set());
+  };
 
   // Ranked users by final score for the podium banner
   const rankedByScore = useMemo(() => {
@@ -629,7 +828,7 @@ export default function CompetitiveGraph({
       {activeTab === 'matrix' && (
         <div className="flex flex-col gap-4">
           {/* Header & Controls Toolbar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-black/25 p-3 rounded-xl border border-white/5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-black/25 p-3 rounded-xl border border-white/5">
             {/* Filter buttons */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold mr-1">
@@ -637,6 +836,7 @@ export default function CompetitiveGraph({
                 <span>Filter:</span>
               </div>
               <button
+                type="button"
                 onClick={() => setMatrixFilter('all')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                   matrixFilter === 'all'
@@ -644,9 +844,10 @@ export default function CompetitiveGraph({
                     : 'bg-white/5 text-slate-400 hover:text-white'
                 }`}
               >
-                All Topics ({hierarchyTopics.length})
+                All Domains ({HIERARCHY_TREE.length})
               </button>
               <button
+                type="button"
                 onClick={() => setMatrixFilter('covered')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                   matrixFilter === 'covered'
@@ -654,9 +855,10 @@ export default function CompetitiveGraph({
                     : 'bg-white/5 text-slate-400 hover:text-white'
                 }`}
               >
-                Covered by Any
+                Covered by Any ({coveredDomainsCount})
               </button>
               <button
+                type="button"
                 onClick={() => setMatrixFilter('uncovered')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                   matrixFilter === 'uncovered'
@@ -664,14 +866,72 @@ export default function CompetitiveGraph({
                     : 'bg-white/5 text-slate-400 hover:text-white'
                 }`}
               >
-                Unmastered Gap
+                Unmastered Gap ({uncoveredDomainsCount})
               </button>
             </div>
 
+            {/* Tree Accordion & Subtopics Controls */}
+            {matrixOrientation === 'topics-rows' && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Active Subtopics vs All Syllabus Toggle */}
+                <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubtopicsOnly(true)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                      activeSubtopicsOnly
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Only show subtopics that team members have practiced"
+                  >
+                    <Zap className="w-3 h-3 text-amber-300" />
+                    <span>Active Subtopics Only</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubtopicsOnly(false)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                      !activeSubtopicsOnly
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Show complete DSA syllabus hierarchy from hierarchy.json"
+                  >
+                    <Globe className="w-3 h-3 text-sky-300" />
+                    <span>Entire Syllabus</span>
+                  </button>
+                </div>
+
+                {/* Expand / Collapse All */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={expandAllDomains}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 transition-colors border border-white/10"
+                    title="Expand all topic categories"
+                  >
+                    <FolderPlus className="w-3 h-3 text-indigo-400" />
+                    <span>Expand All</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={collapseAllDomains}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 transition-colors border border-white/10"
+                    title="Collapse all topic categories"
+                  >
+                    <FolderMinus className="w-3 h-3 text-slate-400" />
+                    <span>Collapse All</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Axis Orientation Toggle */}
-            <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10 self-start md:self-auto">
+            <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10 self-start lg:self-auto">
               <span className="text-[10px] uppercase font-bold text-slate-500 px-2 tracking-wider">Axis:</span>
               <button
+                type="button"
                 onClick={() => setMatrixOrientation('topics-rows')}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   matrixOrientation === 'topics-rows'
@@ -684,6 +944,7 @@ export default function CompetitiveGraph({
                 <span>Topic Rows</span>
               </button>
               <button
+                type="button"
                 onClick={() => setMatrixOrientation('participants-rows')}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   matrixOrientation === 'participants-rows'
@@ -755,15 +1016,22 @@ export default function CompetitiveGraph({
             })}
           </div>
 
-          {/* VIEW 1: TOPIC ROWS (Table View with Weighted Commit Cells) */}
+          {/* VIEW 1: TOPIC ROWS (Table View with Collapsible Tree Rows & Commit Blocks) */}
           {matrixOrientation === 'topics-rows' && (
             <div className="overflow-x-auto custom-scrollbar rounded-xl border border-white/10 bg-black/25">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5 text-slate-400">
-                    <th className="py-3 px-4 font-semibold min-w-[200px]">Topic (from hierarchy.json)</th>
+                    <th className="py-3 px-4 font-semibold min-w-[260px]">
+                      <div className="flex items-center gap-2">
+                        <span>DSA Topic Hierarchy</span>
+                        <span className="text-[10px] font-normal text-slate-500">
+                          ({filteredDomains.length} domains {activeSubtopicsOnly ? '• active subtopics' : '• full syllabus'})
+                        </span>
+                      </div>
+                    </th>
                     {users.map(u => (
-                      <th key={u.username} className="py-3 px-3 font-semibold text-center min-w-[90px]">
+                      <th key={u.username} className="py-3 px-3 font-semibold text-center min-w-[95px]">
                         <div className="flex items-center justify-center gap-1.5">
                           {avatars[u.username] && (
                             <img
@@ -776,76 +1044,245 @@ export default function CompetitiveGraph({
                         </div>
                       </th>
                     ))}
-                    <th className="py-3 px-3 font-semibold text-center min-w-[80px]">Team Total</th>
+                    <th className="py-3 px-3 font-semibold text-center min-w-[85px]">Team Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {filteredTopics.map((topic, idx) => {
-                    const teamSum = topicTeamTotals[topic] || 0;
-                    return (
-                      <tr
-                        key={topic}
-                        className="hover:bg-white/[0.04] transition-colors"
-                      >
-                        <td className="py-2.5 px-4 font-medium text-slate-200">
-                          <span className="text-slate-500 mr-2 text-[10px]">{idx + 1}.</span>
-                          <span className="hover:text-indigo-400 transition-colors">{topic}</span>
-                        </td>
-                        {users.map(u => {
-                          const stat = topicStats[u.username]?.[topic] || { count: 0, problems: [] };
-                          const style = getCellWeightStyle(u.username, stat.count);
-                          const isHovered =
-                            hoveredCell?.username === u.username && hoveredCell?.topic === topic;
+                  {filteredDomains.map((domain, idx) => {
+                    const teamSum = topicTeamTotals[domain.id] || 0;
+                    const isExpanded = expandedDomains.has(domain.id);
+                    const subtrees = getSubtreeNodes(domain, activeSubtopicsOnly, topicTeamTotals);
+                    const allSubtopicsCount = getSubtreeNodes(domain, false, topicTeamTotals).length;
+                    const activeSubtopicsCount = getSubtreeNodes(domain, true, topicTeamTotals).length;
+                    const hasSubtopics = allSubtopicsCount > 0;
 
-                          return (
-                            <td key={u.username} className="py-2 px-3 text-center">
-                              <button
-                                onMouseEnter={() =>
-                                  setHoveredCell({
-                                    username: u.username,
-                                    displayName: u.displayName,
-                                    topic,
-                                    count: stat.count,
-                                    problems: stat.problems,
-                                  })
-                                }
-                                onClick={() =>
-                                  setHoveredCell({
-                                    username: u.username,
-                                    displayName: u.displayName,
-                                    topic,
-                                    count: stat.count,
-                                    problems: stat.problems,
-                                  })
-                                }
-                                className={`inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-9 rounded-lg text-xs font-bold transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer select-none ${
-                                  isHovered ? 'ring-2 ring-white scale-110 z-10' : ''
-                                }`}
-                                style={{
-                                  backgroundColor: style.bg,
-                                  border: style.border,
-                                  color: style.text,
-                                  boxShadow: style.boxShadow,
-                                }}
-                                title={`${u.displayName}: ${stat.count} problems solved in ${topic}`}
+                    return (
+                      <React.Fragment key={domain.id}>
+                        {/* Domain (Root Level) Row */}
+                        <tr
+                          className={`transition-colors cursor-pointer ${
+                            isExpanded ? 'bg-white/[0.04]' : 'hover:bg-white/[0.03]'
+                          }`}
+                          onClick={() => toggleDomain(domain.id)}
+                        >
+                          <td className="py-2.5 px-4 font-semibold text-slate-100">
+                            <div className="flex items-center gap-2">
+                              {/* Expand/Collapse Chevron Button */}
+                              {hasSubtopics ? (
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    toggleDomain(domain.id);
+                                  }}
+                                  className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0"
+                                  title={isExpanded ? 'Collapse subtopics' : 'Expand subtopics'}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-3.5 h-3.5 text-indigo-400" />
+                                  ) : (
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              ) : (
+                                <div className="w-5 shrink-0" />
+                              )}
+
+                              <span className="text-slate-500 font-mono text-[10px] w-5 shrink-0">
+                                {idx + 1}.
+                              </span>
+
+                              <span className="font-bold text-white text-xs sm:text-sm hover:text-indigo-300 transition-colors">
+                                {domain.name}
+                              </span>
+
+                              {/* Active Subtopics Badge */}
+                              {activeSubtopicsCount > 0 ? (
+                                <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shrink-0">
+                                  {activeSubtopicsCount} active {activeSubtopicsCount === 1 ? 'subtopic' : 'subtopics'}
+                                </span>
+                              ) : (
+                                <span className="ml-auto text-[10px] text-slate-500 bg-white/[0.03] px-2 py-0.5 rounded-full shrink-0">
+                                  {allSubtopicsCount} subtopics
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Participant Commit Cells for Domain */}
+                          {users.map(u => {
+                            const stat = topicStats[u.username]?.[domain.id] || { count: 0, problems: [] };
+                            const style = getCellWeightStyle(u.username, stat.count);
+                            const isHovered =
+                              hoveredCell?.username === u.username && hoveredCell?.topic === domain.id;
+
+                            return (
+                              <td
+                                key={u.username}
+                                className="py-2 px-3 text-center"
+                                onClick={e => e.stopPropagation()}
                               >
-                                {stat.count === 0 ? <span className="opacity-30">—</span> : stat.count}
-                              </button>
-                            </td>
-                          );
-                        })}
-                        <td className="py-2 px-3 text-center">
-                          <span
-                            className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-xs font-semibold ${
-                              teamSum > 0
-                                ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
-                                : 'text-slate-600 bg-white/[0.02]'
-                            }`}
-                          >
-                            {teamSum > 0 ? `${teamSum} probs` : '—'}
-                          </span>
-                        </td>
-                      </tr>
+                                <button
+                                  type="button"
+                                  onMouseEnter={() =>
+                                    setHoveredCell({
+                                      username: u.username,
+                                      displayName: u.displayName,
+                                      topic: domain.id,
+                                      name: domain.name,
+                                      depth: 0,
+                                      count: stat.count,
+                                      problems: stat.problems,
+                                    })
+                                  }
+                                  onClick={() =>
+                                    setHoveredCell({
+                                      username: u.username,
+                                      displayName: u.displayName,
+                                      topic: domain.id,
+                                      name: domain.name,
+                                      depth: 0,
+                                      count: stat.count,
+                                      problems: stat.problems,
+                                    })
+                                  }
+                                  className={`inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-9 rounded-lg text-xs font-bold transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer select-none ${
+                                    isHovered ? 'ring-2 ring-white scale-110 z-10' : ''
+                                  }`}
+                                  style={{
+                                    backgroundColor: style.bg,
+                                    border: style.border,
+                                    color: style.text,
+                                    boxShadow: style.boxShadow,
+                                  }}
+                                  title={`${u.displayName}: ${stat.count} problems in ${domain.name}`}
+                                >
+                                  {stat.count === 0 ? <span className="opacity-30">—</span> : stat.count}
+                                </button>
+                              </td>
+                            );
+                          })}
+
+                          {/* Team Total for Domain */}
+                          <td className="py-2 px-3 text-center" onClick={e => e.stopPropagation()}>
+                            <span
+                              className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-xs font-semibold ${
+                                teamSum > 0
+                                  ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                                  : 'text-slate-600 bg-white/[0.02]'
+                              }`}
+                            >
+                              {teamSum > 0 ? `${teamSum} probs` : '—'}
+                            </span>
+                          </td>
+                        </tr>
+
+                        {/* Expanded Children / Subtopics */}
+                        {isExpanded && (
+                          <>
+                            {subtrees.length === 0 ? (
+                              <tr className="bg-white/[0.01]">
+                                <td
+                                  colSpan={users.length + 2}
+                                  className="py-2.5 pl-12 pr-4 text-xs text-slate-500 italic bg-black/20"
+                                >
+                                  No subtopics explored yet in {domain.name}. Switch toolbar to &quot;Entire Syllabus&quot; to inspect theoretical tree.
+                                </td>
+                              </tr>
+                            ) : (
+                              subtrees.map(child => {
+                                const childTeamSum = topicTeamTotals[child.id] || 0;
+                                const indentPadding =
+                                  child.depth === 1 ? 'pl-9' : child.depth === 2 ? 'pl-14' : 'pl-20';
+
+                                return (
+                                  <tr
+                                    key={child.id}
+                                    className="bg-white/[0.015] hover:bg-white/[0.04] transition-colors border-l-2 border-indigo-500/40"
+                                  >
+                                    <td className={`py-2 px-4 ${indentPadding}`}>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-slate-600 font-mono text-xs select-none">
+                                          {child.depth === 1 ? '├─' : '└─'}
+                                        </span>
+                                        <span className="text-slate-300 text-xs font-medium hover:text-indigo-300 transition-colors">
+                                          {child.name}
+                                        </span>
+                                        <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-slate-500 font-medium">
+                                          {child.depth === 1 ? 'Subtopic' : 'Pattern'}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* Participant Commit Cells for Subtopic */}
+                                    {users.map(u => {
+                                      const stat = topicStats[u.username]?.[child.id] || { count: 0, problems: [] };
+                                      const style = getCellWeightStyle(u.username, stat.count);
+                                      const isHovered =
+                                        hoveredCell?.username === u.username && hoveredCell?.topic === child.id;
+
+                                      return (
+                                        <td key={u.username} className="py-1.5 px-3 text-center">
+                                          <button
+                                            type="button"
+                                            onMouseEnter={() =>
+                                              setHoveredCell({
+                                                username: u.username,
+                                                displayName: u.displayName,
+                                                topic: child.id,
+                                                name: child.name,
+                                                depth: child.depth,
+                                                count: stat.count,
+                                                problems: stat.problems,
+                                              })
+                                            }
+                                            onClick={() =>
+                                              setHoveredCell({
+                                                username: u.username,
+                                                displayName: u.displayName,
+                                                topic: child.id,
+                                                name: child.name,
+                                                depth: child.depth,
+                                                count: stat.count,
+                                                problems: stat.problems,
+                                              })
+                                            }
+                                            className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-8 rounded-md text-[11px] font-bold transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer select-none ${
+                                              isHovered ? 'ring-2 ring-white scale-110 z-10' : ''
+                                            }`}
+                                            style={{
+                                              backgroundColor: style.bg,
+                                              border: style.border,
+                                              color: style.text,
+                                              boxShadow: style.boxShadow,
+                                            }}
+                                            title={`${u.displayName}: ${stat.count} problems in ${child.name}`}
+                                          >
+                                            {stat.count === 0 ? <span className="opacity-30">—</span> : stat.count}
+                                          </button>
+                                        </td>
+                                      );
+                                    })}
+
+                                    {/* Team Total for Subtopic */}
+                                    <td className="py-1.5 px-3 text-center">
+                                      <span
+                                        className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                                          childTeamSum > 0
+                                            ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                                            : 'text-slate-600 bg-white/[0.02]'
+                                        }`}
+                                      >
+                                        {childTeamSum > 0 ? childTeamSum : '—'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
@@ -857,6 +1294,38 @@ export default function CompetitiveGraph({
           {matrixOrientation === 'participants-rows' && (
             <div className="overflow-x-auto custom-scrollbar rounded-xl border border-white/10 bg-black/25 p-4">
               <div className="min-w-[860px] flex flex-col gap-3">
+                {/* Column Mode Selector */}
+                <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-semibold">Columns:</span>
+                    <button
+                      type="button"
+                      onClick={() => setParticipantColumnsView('domains')}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                        participantColumnsView === 'domains'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white/5 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Top Domains ({filteredDomains.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setParticipantColumnsView('active-techniques')}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                        participantColumnsView === 'active-techniques'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white/5 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Active Subtopics ({activeTechniqueNodes.length})
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-slate-500">
+                    GitHub Commit Block Calendar Matrix
+                  </span>
+                </div>
+
                 {/* Topic Index Header Row */}
                 <div className="flex items-center gap-2 pb-1 border-b border-white/5 text-[11px] text-slate-400">
                   <div className="w-48 shrink-0 font-semibold text-slate-300">
@@ -866,14 +1335,18 @@ export default function CompetitiveGraph({
                     className="flex-1 gap-1.5 text-center"
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: `repeat(${filteredTopics.length}, minmax(0, 1fr))`,
+                      gridTemplateColumns: `repeat(${
+                        participantColumnsView === 'domains'
+                          ? filteredDomains.length
+                          : activeTechniqueNodes.length
+                      }, minmax(0, 1fr))`,
                     }}
                   >
-                    {filteredTopics.map((topic, i) => (
+                    {(participantColumnsView === 'domains' ? filteredDomains : activeTechniqueNodes).map((node, i) => (
                       <div
-                        key={topic}
+                        key={node.id}
                         className="text-[10px] text-slate-500 hover:text-white cursor-help font-mono truncate"
-                        title={`${i + 1}. ${topic}`}
+                        title={`${i + 1}. ${node.id}`}
                       >
                         {i + 1}
                       </div>
@@ -888,6 +1361,8 @@ export default function CompetitiveGraph({
                 {users.map(u => {
                   const colors = getUserColors(u.username);
                   const totalSolved = userTotalHierarchyProblems[u.username] || 0;
+                  const currentColumns =
+                    participantColumnsView === 'domains' ? filteredDomains : activeTechniqueNodes;
 
                   return (
                     <div
@@ -923,23 +1398,26 @@ export default function CompetitiveGraph({
                         className="flex-1 gap-1.5"
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: `repeat(${filteredTopics.length}, minmax(0, 1fr))`,
+                          gridTemplateColumns: `repeat(${currentColumns.length}, minmax(0, 1fr))`,
                         }}
                       >
-                        {filteredTopics.map(topic => {
-                          const stat = topicStats[u.username]?.[topic] || { count: 0, problems: [] };
+                        {currentColumns.map(node => {
+                          const stat = topicStats[u.username]?.[node.id] || { count: 0, problems: [] };
                           const style = getCellWeightStyle(u.username, stat.count);
                           const isHovered =
-                            hoveredCell?.username === u.username && hoveredCell?.topic === topic;
+                            hoveredCell?.username === u.username && hoveredCell?.topic === node.id;
 
                           return (
                             <button
-                              key={topic}
+                              key={node.id}
+                              type="button"
                               onMouseEnter={() =>
                                 setHoveredCell({
                                   username: u.username,
                                   displayName: u.displayName,
-                                  topic,
+                                  topic: node.id,
+                                  name: node.name,
+                                  depth: node.depth,
                                   count: stat.count,
                                   problems: stat.problems,
                                 })
@@ -948,7 +1426,9 @@ export default function CompetitiveGraph({
                                 setHoveredCell({
                                   username: u.username,
                                   displayName: u.displayName,
-                                  topic,
+                                  topic: node.id,
+                                  name: node.name,
+                                  depth: node.depth,
                                   count: stat.count,
                                   problems: stat.problems,
                                 })
@@ -962,7 +1442,7 @@ export default function CompetitiveGraph({
                                 color: style.text,
                                 boxShadow: style.boxShadow,
                               }}
-                              title={`${topic}: ${stat.count} problems solved by ${u.displayName}`}
+                              title={`${node.id}: ${stat.count} problems solved by ${u.displayName}`}
                             >
                               {stat.count > 0 ? stat.count : ''}
                             </button>
@@ -998,11 +1478,11 @@ export default function CompetitiveGraph({
                   <img
                     src={avatars[hoveredCell.username]}
                     alt="avatar"
-                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10"
+                    className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10"
                   />
                 ) : (
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0"
                     style={{ backgroundColor: getUserColors(hoveredCell.username).stroke }}
                   >
                     {hoveredCell.displayName[0]}
@@ -1012,18 +1492,39 @@ export default function CompetitiveGraph({
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-bold text-white">{hoveredCell.displayName}</p>
                     <span className="text-xs text-slate-500">•</span>
-                    <span
-                      className="text-xs font-bold px-2 py-0.5 rounded"
-                      style={{
-                        color: getUserColors(hoveredCell.username).stroke,
-                        backgroundColor: getUserColors(hoveredCell.username).bg,
-                        border: `1px solid ${getUserColors(hoveredCell.username).border}`,
-                      }}
-                    >
-                      {hoveredCell.topic}
-                    </span>
+                    {/* Breadcrumb path */}
+                    <div className="flex items-center gap-1 flex-wrap text-xs">
+                      {hoveredCell.topic.split(/\s*>\s*/).map((seg, sIdx, arr) => (
+                        <React.Fragment key={sIdx}>
+                          <span
+                            className={`px-2 py-0.5 rounded font-semibold ${
+                              sIdx === arr.length - 1
+                                ? 'text-white'
+                                : 'text-slate-400 bg-white/5'
+                            }`}
+                            style={
+                              sIdx === arr.length - 1
+                                ? {
+                                    color: getUserColors(hoveredCell.username).stroke,
+                                    backgroundColor: getUserColors(hoveredCell.username).bg,
+                                    border: `1px solid ${getUserColors(hoveredCell.username).border}`,
+                                  }
+                                : undefined
+                            }
+                          >
+                            {seg}
+                          </span>
+                          {sIdx < arr.length - 1 && (
+                            <span className="text-slate-600 text-[10px]">›</span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                      <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/10 text-slate-300 font-bold ml-1">
+                        {hoveredCell.depth === 0 ? 'Domain (L1)' : hoveredCell.depth === 1 ? 'Subtopic (L2)' : 'Pattern (L3)'}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-400 mt-1">
                     {hoveredCell.count === 0 ? (
                       <span className="text-slate-500">Unexplored topic • 0 problems submitted yet.</span>
                     ) : (
@@ -1059,7 +1560,7 @@ export default function CompetitiveGraph({
           ) : (
             <div className="p-3 rounded-xl bg-black/20 border border-white/5 text-xs text-slate-500 flex items-center justify-center gap-2">
               <Info className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Hover or click on any weighted block to inspect specific problems solved by participant</span>
+              <span>Click or hover on any weighted block or expand a domain to inspect specific techniques solved</span>
             </div>
           )}
 

@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import hierarchyData from '@/data/hierarchy.json';
 import CompetitiveGraph from '@/components/CompetitiveGraph';
 import { getUserTheme } from '@/lib/userTheme';
+import { calculateAggregatedScore } from '@/lib/scoreCalculator';
 
 interface User {
   username: string;
@@ -129,13 +130,13 @@ export default function UsersPage() {
         });
         setCoveredTopics(coveredMap);
 
-        // 6. Compute user aggregate stats strictly for Winter Arc challenge
+        // 6. Compute user aggregate stats strictly for Winter Arc challenge with runtime score calculation
         const stats: Record<string, UserStat> = {};
         usersList.forEach(u => {
           const uSubs = subData.filter(s => s.username === u.username);
-          const analyzed = uSubs.filter(s => s.analyzed && s.analysis && typeof s.analysis.aggregatedScore === 'number');
+          const analyzed = uSubs.filter(s => s.analyzed && s.analysis);
           const avg = analyzed.length
-            ? Number((analyzed.reduce((acc, s) => acc + s.analysis.aggregatedScore, 0) / analyzed.length).toFixed(1))
+            ? Number((analyzed.reduce((acc, s) => acc + calculateAggregatedScore(s.analysis), 0) / analyzed.length).toFixed(1))
             : 0;
 
           stats[u.username] = {

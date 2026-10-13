@@ -9,19 +9,27 @@ export const calculateScoreNode = (state: AgentState): Partial<AgentState> => {
   const ecScore = state.edgeCasesScore || 0;
   const ehScore = state.errorHandlingScore || 0;
 
-  // Algorithmic Efficiency (40)
-  const algoScore = (tScore * 25) + (sScore * 15);
+  // Algorithmic Efficiency (70% total weight)
+  // Time complexity is the primary differentiator in competitive programming.
+  const timeWeight = 45;
+  const spaceWeight = 25;
+  const algoScore = (tScore * timeWeight) + (sScore * spaceWeight);
   
-  // Code Quality (20)
-  const qualityScore = (rScore * 10) + (mScore * 5) + (simScore * 5);
+  // Code Quality (20% total weight)
+  const readabilityWeight = 10;
+  const simplicityWeight = 5;
+  const maintainabilityWeight = 5;
+  const qualityScore = (rScore * readabilityWeight) + (simScore * simplicityWeight) + (mScore * maintainabilityWeight);
   
-  // Correctness & Robustness (15)
-  const robustnessScore = (ecScore * 10) + (ehScore * 5);
+  // Correctness & Robustness (10% total weight)
+  const edgeCasesWeight = 7;
+  const errorHandlingWeight = 3;
+  const robustnessScore = (ecScore * edgeCasesWeight) + (ehScore * errorHandlingWeight);
 
-  // Total max possible weight is 75. 
-  // We divide by 75 to normalize back to a 0-10 scale.
+  // Total max possible weight is 100. 
+  // Dividing by 100 normalizes neatly back to a 0-10 scale.
   const weightedSum = algoScore + qualityScore + robustnessScore;
-  const aggregatedScore = weightedSum / 75;
+  const aggregatedScore = weightedSum / 100;
 
   return {
     aggregatedScore: parseFloat(aggregatedScore.toFixed(2)),

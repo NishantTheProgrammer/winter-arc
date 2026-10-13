@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { calculateAggregatedScore } from '@/lib/scoreCalculator';
 
 interface UserProgressProps {
   submissions: any[];
@@ -51,9 +52,12 @@ export default function UserProgress({ submissions, avatars, qotdMap }: UserProg
           let totalScore = 0;
           const scoreByDate: Record<string, number> = {};
           validSubs.forEach(s => {
-            if (s.analysis && s.analysis.aggregatedScore) {
-              const currentMax = scoreByDate[s.date] || 0;
-              scoreByDate[s.date] = Math.max(currentMax, s.analysis.aggregatedScore);
+            if (s.analysis) {
+              const dynScore = calculateAggregatedScore(s.analysis);
+              if (dynScore > 0) {
+                const currentMax = scoreByDate[s.date] || 0;
+                scoreByDate[s.date] = Math.max(currentMax, dynScore);
+              }
             }
           });
           Object.values(scoreByDate).forEach(score => { totalScore += score; });

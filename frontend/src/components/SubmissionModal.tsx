@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { getUserTheme } from '@/lib/userTheme';
+import { calculateAggregatedScore } from '@/lib/scoreCalculator';
 
 interface SubmissionModalProps {
   selectedSub: any;
@@ -69,7 +70,7 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
                 const isSelected = sub.submissionId === selectedSub.submissionId;
                 const theme = getUserTheme(sub.username, userColors?.[sub.username]);
                 const rgb = theme.rgb;
-                const score = sub.analysis?.aggregatedScore?.toFixed(1);
+                const score = sub.analysis ? calculateAggregatedScore(sub.analysis).toFixed(1) : null;
                 return (
                   <button
                     key={sub.submissionId}
@@ -121,7 +122,7 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-indigo-300">Score:</span>
                   <span className="text-base sm:text-lg font-black text-white">
-                    {selectedSub.analysis.aggregatedScore?.toFixed(1) || '0.0'}
+                    {calculateAggregatedScore(selectedSub.analysis).toFixed(1)}
                     <span className="text-xs text-indigo-400">/10</span>
                   </span>
                 </div>
@@ -131,7 +132,7 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
               <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-indigo-500/10">
                 {/* Efficiency */}
                 <div className="bg-black/20 p-3 rounded-lg border border-white/5">
-                  <p className="text-xs font-semibold text-amber-400 mb-2 uppercase tracking-wider border-b border-amber-400/20 pb-1">Efficiency (40%)</p>
+                  <p className="text-xs font-semibold text-amber-400 mb-2 uppercase tracking-wider border-b border-amber-400/20 pb-1">Efficiency (70%)</p>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-400">Time:</span>
                     <span className="text-white">{selectedSub.analysis.timeComplexityScore}/10</span>
@@ -159,7 +160,7 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
                 </div>
                 {/* Robustness */}
                 <div className="bg-black/20 p-3 rounded-lg border border-white/5">
-                  <p className="text-xs font-semibold text-pink-400 mb-2 uppercase tracking-wider border-b border-pink-400/20 pb-1">Robustness (15%)</p>
+                  <p className="text-xs font-semibold text-pink-400 mb-2 uppercase tracking-wider border-b border-pink-400/20 pb-1">Robustness (10%)</p>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-400">Edge Cases:</span>
                     <span className="text-white">{selectedSub.analysis.edgeCasesScore}/10</span>
