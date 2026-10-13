@@ -73,11 +73,12 @@ async function runAnalysisBatch() {
       await analysisRef.set({
         username: sub.username,
         date: dateString,
+        titleSlug: sub.titleSlug,
         totalScore: finalState.aggregatedScore,
         timeScore: finalState.timeComplexityScore,
         spaceScore: finalState.spaceComplexityScore,
         readabilityScore: finalState.readabilityScore,
-        approach: "Automatic Bulk Scan"
+        approach: (finalState.approachesUsed?.[0] ?? "Automatic Bulk Scan")
       }, { merge: true });
 
       console.log(`  ✅ Score: ${finalState.aggregatedScore}/10. Saved.`);

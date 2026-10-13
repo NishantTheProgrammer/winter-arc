@@ -34,18 +34,65 @@ interface LeaderboardProps {
   daySubmissions?: any[];
   avatars?: Record<string, string>;
   qotdSlug?: string;
+  loading?: boolean;
   onRowClick?: (username: string) => void;
 }
 
-export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, onRowClick }: LeaderboardProps) {
+export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, loading: externalLoading, onRowClick }: LeaderboardProps) {
   const [scores, setScores] = useState<UserScore[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const loading = externalLoading !== undefined ? externalLoading : internalLoading;
 
   const isToday = date === new Date().toISOString().split('T')[0];
   const dateTitle = isToday ? "Today's Leaderboard" : `Leaderboard — ${date}`;
 
   useEffect(() => {
+    // If daySubmissions is provided (from Dashboard), compute scores directly from it
+    if (daySubmissions !== undefined) {
+      // Prioritize QOTD submissions if available
+      const relevant = (qotdSlug && daySubmissions.some(s => s.titleSlug === qotdSlug))
+        ? daySubmissions.filter(s => s.titleSlug === qotdSlug)
+        : daySubmissions;
+
+      // Group by user, picking the highest score / latest analyzed submission
+      const userMap = new Map<string, any>();
+      for (const sub of relevant) {
+        if (!userMap.has(sub.username)) {
+          userMap.set(sub.username, sub);
+        } else {
+          const existing = userMap.get(sub.username);
+          const existingScore = existing.analysis?.aggregatedScore ?? 0;
+          const currentScore = sub.analysis?.aggregatedScore ?? 0;
+          if (currentScore > existingScore || (!existing.analyzed && sub.analyzed)) {
+            userMap.set(sub.username, sub);
+          }
+        }
+      }
+
+      const parsedScores: UserScore[] = Array.from(userMap.values()).map(sub => {
+        const isAnalyzed = Boolean(sub.analyzed && sub.analysis && typeof sub.analysis.aggregatedScore === 'number');
+        const rawApproach = sub.analysis?.approachesUsed?.[0] || sub.analysis?.approach || (isAnalyzed ? 'Optimized' : 'Not analyzed yet');
+        const approach = typeof rawApproach === 'string' ? rawApproach.split(' > ')[0].trim() : 'Optimized';
+
+        return {
+          username: sub.username,
+          displayName: DISPLAY_NAMES[sub.username] ?? sub.username,
+          totalScore: isAnalyzed ? sub.analysis.aggregatedScore : 0,
+          timeScore: isAnalyzed ? (sub.analysis.timeComplexityScore ?? 0) : 0,
+          spaceScore: isAnalyzed ? (sub.analysis.spaceComplexityScore ?? 0) : 0,
+          readabilityScore: isAnalyzed ? (sub.analysis.readabilityScore ?? 0) : 0,
+          approach: isAnalyzed ? approach : 'Not analyzed yet',
+        };
+      });
+
+      parsedScores.sort((a, b) => b.totalScore - a.totalScore);
+      setScores(parsedScores);
+      return;
+    }
+
+    // Fallback: fetch from analyses collection
     async function fetchScores() {
+      setInternalLoading(true);
       try {
         const q = query(collection(db, 'analyses'), orderBy('totalScore', 'desc'));
         const snap = await getDocs(q);
@@ -53,39 +100,23 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, o
           .map(d => d.data())
           .filter(d => d.date === date && (!qotdSlug || d.titleSlug === qotdSlug));
 
-        if (todayDocs.length > 0) {
-          setScores(todayDocs.map(d => ({
-            username: d.username,
-            displayName: DISPLAY_NAMES[d.username] ?? d.username,
-            totalScore: d.totalScore ?? 0,
-            timeScore: d.timeScore ?? 0,
-            spaceScore: d.spaceScore ?? 0,
-            readabilityScore: d.readabilityScore ?? 0,
-            approach: d.approach ?? 'Unknown',
-          })));
-        } else {
-          const usersSnap = await getDocs(collection(db, 'users'));
-          setScores(usersSnap.docs.map(d => {
-            const u = d.data();
-            return {
-              username: u.username,
-              displayName: u.displayName,
-              totalScore: 0,
-              timeScore: 0,
-              spaceScore: 0,
-              readabilityScore: 0,
-              approach: 'Not analyzed yet',
-            };
-          }));
-        }
+        setScores(todayDocs.map(d => ({
+          username: d.username,
+          displayName: DISPLAY_NAMES[d.username] ?? d.username,
+          totalScore: d.totalScore ?? 0,
+          timeScore: d.timeScore ?? 0,
+          spaceScore: d.spaceScore ?? 0,
+          readabilityScore: d.readabilityScore ?? 0,
+          approach: d.approach ?? 'Unknown',
+        })));
       } catch (err) {
         console.error('Failed to fetch leaderboard:', err);
       } finally {
-        setLoading(false);
+        setInternalLoading(false);
       }
     }
     fetchScores();
-  }, [date]);
+  }, [date, daySubmissions, qotdSlug]);
 
   return (
     <div
@@ -110,6 +141,10 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, o
         <div className="flex items-center gap-3 text-slate-500 py-8 justify-center">
           <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           Loading scores...
+        </div>
+      ) : scores.length === 0 ? (
+        <div className="py-8 text-center text-slate-500 text-sm">
+          No submissions for {isToday ? "today" : "this date"} yet.
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -205,9 +240,9 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, o
         </div>
       )}
 
-      {!loading && scores.every(s => s.totalScore === 0) && (
+      {!loading && scores.length > 0 && scores.every(s => s.totalScore === 0) && (
         <p className="text-center text-xs text-slate-600 mt-4">
-          No AI analysis for today yet. Trigger the pipeline after submitting today's problem.
+          Submissions received, but not analyzed yet. Run sync to evaluate with AI.
         </p>
       )}
     </div>

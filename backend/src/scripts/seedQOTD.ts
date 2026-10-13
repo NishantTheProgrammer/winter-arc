@@ -20,9 +20,16 @@ async function fetchQOTDForMonth(year: number, month: number) {
       query,
       variables: { year, month }
     });
-    return response.data.data.dailyCodingChallengeV2.challenges;
-  } catch (e) {
-    console.error(`Failed for ${year}-${month}`, e);
+    
+    const dailyData = response.data.data.dailyCodingChallengeV2;
+    if (!dailyData || !dailyData.challenges) {
+      console.log(`  ℹ️ No QOTD data available yet for ${year}-${month} (future date).`);
+      return [];
+    }
+    
+    return dailyData.challenges;
+  } catch (e: any) {
+    console.error(`  ❌ Failed to fetch for ${year}-${month}: ${e.message}`);
     return [];
   }
 }

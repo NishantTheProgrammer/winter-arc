@@ -107,6 +107,7 @@ async function resetAndReanalyze() {
         {
           username:         sub.username,
           date:             dateString,
+          titleSlug:        sub.titleSlug,
           totalScore:       finalState.aggregatedScore,
           timeScore:        finalState.timeComplexityScore,
           spaceScore:       finalState.spaceComplexityScore,

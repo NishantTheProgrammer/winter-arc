@@ -32,41 +32,59 @@ export default function Dashboard() {
   const [avatars, setAvatars] = useState<Record<string, string>>({});
   const [selectedSub, setSelectedSub] = useState<any | null>(null);
   const [qotdMap, setQotdMap] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch submissions
-      const subSnap = await getDocs(collection(db, 'submissions'));
-      const rawSubmissions = subSnap.docs.map(doc => doc.data());
+      try {
+        // 1. Fetch QOTD first so we can map time-traveled submissions
+        const qotdSnapshot = await getDocs(collection(db, 'qotd'));
+        const qMap: Record<string, any> = {};
+        const slugToQotdDate: Record<string, string> = {};
+        qotdSnapshot.docs.forEach(d => {
+          const data = d.data();
+          qMap[d.id] = data;
+          slugToQotdDate[data.titleSlug] = d.id;
+        });
+        setQotdMap(qMap);
 
-      // Deduplicate: keep only the latest submission per user per question PER DAY to preserve streaks
-      const uniqueSubs = new Map();
-      for (const sub of rawSubmissions) {
-        const key = `${sub.username}_${sub.titleSlug}_${sub.date}`;
-        if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key).timestamp) {
-          uniqueSubs.set(key, sub);
+        // 2. Fetch submissions
+        const subSnap = await getDocs(collection(db, 'submissions'));
+        const rawSubmissions = subSnap.docs.map(doc => {
+          const data = doc.data();
+          // Time Travel Feature: If this submission is a known QOTD, credit it to the QOTD's date
+          // instead of the raw submission timestamp.
+          if (slugToQotdDate[data.titleSlug]) {
+            return { ...data, date: slugToQotdDate[data.titleSlug] };
+          }
+          return data;
+        });
+
+        // 3. Deduplicate: keep only the latest submission per user per question PER DAY to preserve streaks
+        const uniqueSubs = new Map();
+        for (const sub of rawSubmissions) {
+          const key = `${sub.username}_${sub.titleSlug}_${sub.date}`;
+          if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key).timestamp) {
+            uniqueSubs.set(key, sub);
+          }
         }
+        setSubmissions(Array.from(uniqueSubs.values()));
+
+        // 4. Fetch participants for avatars
+        const partSnap = await getDocs(collection(db, 'participants'));
+        const avatarMap: Record<string, string> = {};
+        partSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.username && data.avatar) {
+            avatarMap[data.username] = data.avatar;
+          }
+        });
+        setAvatars(avatarMap);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
       }
-      setSubmissions(Array.from(uniqueSubs.values()));
-
-      // Fetch participants for avatars
-      const partSnap = await getDocs(collection(db, 'participants'));
-      const avatarMap: Record<string, string> = {};
-      partSnap.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.username && data.avatar) {
-          avatarMap[data.username] = data.avatar;
-        }
-      });
-      setAvatars(avatarMap);
-
-      // Fetch QOTD
-      const qotdSnapshot = await getDocs(collection(db, 'qotd'));
-      const qMap: Record<string, any> = {};
-      qotdSnapshot.docs.forEach(d => {
-        qMap[d.id] = d.data();
-      });
-      setQotdMap(qMap);
     }
     fetchData();
   }, []);
@@ -94,6 +112,7 @@ export default function Dashboard() {
           daySubmissions={daySubmissions}
           avatars={avatars}
           qotdSlug={todayQotd?.titleSlug}
+          loading={loading}
           onRowClick={(username) => {
             let sub;
             if (todayQotd) {
