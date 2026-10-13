@@ -83,6 +83,14 @@ docker compose exec backend npm run analyze
 ```
 *(Ensure the Ollama application is actively running on your host machine before running this!)*
 
+### 4. Daily System Design Arc Picker
+Picks the system design problem of the day from `system-design.json` following the difficulty progression (0 to 5) with 2 problems on Sundays.
+```bash
+docker compose exec backend npm run pick:sd
+# Or inspect current difficulty ladder and assigned days:
+docker compose exec backend npm run pick:sd -- --status
+```
+
 ---
 
 ## 🗑️ Database Reset

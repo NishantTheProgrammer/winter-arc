@@ -20,15 +20,17 @@ import {
   Cpu,
   ShieldCheck,
   Code2,
+  Layers,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
-  { href: '/',            label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/users',       label: 'Users',        icon: Users },
-  { href: '/submissions', label: 'Submissions',  icon: FileCode2 },
-  { href: '/settings',    label: 'Settings',     icon: Settings },
+  { href: '/',               label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/system-design',  label: 'System Design', icon: Layers },
+  { href: '/users',          label: 'Users',         icon: Users },
+  { href: '/submissions',    label: 'Submissions',   icon: FileCode2 },
+  { href: '/settings',       label: 'Settings',      icon: Settings },
 ];
 
 export default function Sidebar() {

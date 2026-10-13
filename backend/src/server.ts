@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './api/routes';
+import systemDesignRoutes from './api/systemDesign';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api', apiRoutes);
+app.use('/api/system-design', systemDesignRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Winter Arc Backend is running!' });

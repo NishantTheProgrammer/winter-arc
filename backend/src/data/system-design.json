@@ -1,0 +1,3744 @@
+{
+  "name": "90-Day System Design Arc",
+  "version": "1.3",
+  "total_problems": 92,
+  "difficulty_scale": {
+    "0": "Very easy / foundational",
+    "1": "Easy",
+    "2": "Medium",
+    "3": "Hard",
+    "4": "Very hard",
+    "5": "Advanced / senior-level"
+  },
+  "recommended_selection": {
+    "mode": "random_by_difficulty",
+    "note": "Start with difficulty 0 for a few days, then gradually introduce higher levels. Randomize within the currently unlocked difficulty levels.",
+    "suggested_unlocks": [
+      {
+        "days": "1-7",
+        "levels": [
+          0
+        ]
+      },
+      {
+        "days": "8-18",
+        "levels": [
+          0,
+          1
+        ]
+      },
+      {
+        "days": "19-35",
+        "levels": [
+          1,
+          2
+        ]
+      },
+      {
+        "days": "36-55",
+        "levels": [
+          2,
+          3
+        ]
+      },
+      {
+        "days": "56-75",
+        "levels": [
+          3,
+          4
+        ]
+      },
+      {
+        "days": "76-92",
+        "levels": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "problems": [
+    {
+      "id": 1,
+      "title": "URL Shortener",
+      "difficulty": 0,
+      "problem_statement": "Build a service that creates short URLs for long URLs and redirects users reliably at very high read volume.",
+      "tags": [
+        "basics",
+        "HTTP",
+        "hashing",
+        "caching",
+        "database"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design URL Shortener",
+          "url": "https://systemdesignschool.io/problems/url-shortener/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "concept_article",
+          "title": "Consistent Hashing",
+          "url": "https://www.toptal.com/big-data/consistent-hashing"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "System Design Primer: URL Shortener Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/url_shortener/README.md"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 2,
+      "title": "Pastebin",
+      "difficulty": 0,
+      "problem_statement": "Design a text-sharing service supporting creation, retrieval, expiration, privacy, and large traffic.",
+      "tags": [
+        "basics",
+        "TTL",
+        "object-storage",
+        "caching"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Pastebin System Design",
+          "url": "https://systemdesignschool.io/problems/pastebin/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Object Storage Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design Pastebin / URL Shortener — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/pastebin/README.md"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 3,
+      "title": "Unique ID Generator",
+      "difficulty": 0,
+      "problem_statement": "Design a globally unique, roughly time-ordered ID service that works across many application servers.",
+      "tags": [
+        "IDs",
+        "Snowflake",
+        "coordination",
+        "scalability"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Distributed ID Generator (Snowflake)",
+          "url": "https://vibeengines.com/systemdesign/distributed-id-generator-system-design"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "implementation_reference",
+          "title": "Twitter Snowflake ID Generator",
+          "url": "https://github.com/twitter-archive/snowflake"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "From UUID to Snowflake: Understanding Database Fragmentation",
+          "url": "https://www.designgurus.io/blog/database-fragmentation"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 4,
+      "title": "Rate Limiter",
+      "difficulty": 0,
+      "problem_statement": "Design a distributed API rate limiter supporting per-user, per-IP, and per-endpoint limits.",
+      "tags": [
+        "rate-limiting",
+        "Redis",
+        "distributed-systems",
+        "API"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Distributed Rate Limiter System Design",
+          "url": "https://systemdesignschool.io/problems/rate-limiter/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_article",
+          "title": "Cloudflare Rate Limiting Learning Center",
+          "url": "https://www.cloudflare.com/learning/bots/what-is-rate-limiting/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Distributed Rate Limiter — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/distributed-rate-limiter"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 5,
+      "title": "Load Balancer",
+      "difficulty": 0,
+      "problem_statement": "Design a highly available load balancer that distributes traffic and removes unhealthy instances.",
+      "tags": [
+        "load-balancing",
+        "L4",
+        "L7",
+        "health-checks"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Complete Load Balancer Guide",
+          "url": "https://www.designgurus.io/blog/complete-load-balancing-guide"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "NGINX Documentation",
+          "url": "https://docs.nginx.com/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_article",
+          "title": "Cloudflare Load Balancing",
+          "url": "https://www.cloudflare.com/learning/performance/what-is-load-balancing/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "Cloudflare Learning Center",
+          "url": "https://www.cloudflare.com/learning/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 6,
+      "title": "API Gateway",
+      "difficulty": 0,
+      "problem_statement": "Design an API gateway handling routing, authentication, throttling, request transformation, and observability.",
+      "tags": [
+        "API-gateway",
+        "routing",
+        "auth",
+        "rate-limiting"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design an API Gateway",
+          "url": "https://www.designgurus.io/course-play/system-design-interview-crash-course/doc/design-an-api-gateway"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS API Gateway Documentation",
+          "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "NGINX Documentation",
+          "url": "https://docs.nginx.com/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Load Balancer vs. Reverse Proxy vs. API Gateway",
+          "url": "https://www.designgurus.io/blog/load-balancer-reverse-proxy-api-gateway"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 7,
+      "title": "Distributed Cache",
+      "difficulty": 1,
+      "problem_statement": "Design a cache service with TTL, eviction, replication, partitioning, and failure recovery.",
+      "tags": [
+        "cache",
+        "Redis",
+        "partitioning",
+        "replication"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Distributed Cache System Design",
+          "url": "https://systemdesignschool.io/problems/distributed-cache/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Distributed Cache Like Redis — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/distributed-cache"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 8,
+      "title": "Notification Service",
+      "difficulty": 1,
+      "problem_statement": "Design a service that sends email, SMS, push, and in-app notifications reliably at scale.",
+      "tags": [
+        "notifications",
+        "queues",
+        "retries",
+        "fanout"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Notification Service",
+          "url": "https://revisealgo.com/system-design/module-7/design-notification-service"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Firebase Cloud Messaging",
+          "url": "https://firebase.google.com/docs/cloud-messaging"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Developer Guide",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 9,
+      "title": "Distributed Lock Service",
+      "difficulty": 1,
+      "problem_statement": "Design a lock service that prevents concurrent workers from processing the same resource.",
+      "tags": [
+        "distributed-lock",
+        "leases",
+        "consistency",
+        "Redis"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Distributed Lock Service",
+          "url": "https://dsasolved.com/system-design/design-distributed-lock"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "etcd Documentation",
+          "url": "https://etcd.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Distributed Locks",
+          "url": "https://redis.io/docs/latest/develop/clients/patterns/distributed-locks/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 10,
+      "title": "Service Discovery",
+      "difficulty": 1,
+      "problem_statement": "Design a service-discovery mechanism allowing dynamic services to find healthy service instances.",
+      "tags": [
+        "service-discovery",
+        "health-checks",
+        "DNS",
+        "consensus"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Service Discovery System",
+          "url": "https://vibeengines.com/systemdesign/service-discovery-system-design"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "etcd Documentation",
+          "url": "https://etcd.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "gRPC Name Resolution",
+          "url": "https://grpc.io/docs/guides/custom-name-resolution/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "MIT Distributed Systems (6.5840)",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 11,
+      "title": "Configuration Service",
+      "difficulty": 1,
+      "problem_statement": "Design a centralized configuration service with versioning, rollout, caching, and safe failure behavior.",
+      "tags": [
+        "configuration",
+        "consistency",
+        "caching",
+        "rollouts"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Configuration Service with LRU Cache",
+          "url": "https://robinali34.github.io/blog_system_design/2025/11/14/design-configuration-service-lru-cache/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "etcd Documentation",
+          "url": "https://etcd.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS AppConfig Documentation",
+          "url": "https://docs.aws.amazon.com/appconfig/latest/userguide/what-is-appconfig.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 12,
+      "title": "Webhook Delivery Platform",
+      "difficulty": 1,
+      "problem_statement": "Design reliable webhook delivery with retries, signatures, idempotency, ordering options, and dead-letter handling.",
+      "tags": [
+        "webhooks",
+        "retries",
+        "idempotency",
+        "queues"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Webhook System Design",
+          "url": "https://systemdesignschool.io/problems/webhook/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Stripe Webhooks Documentation",
+          "url": "https://docs.stripe.com/webhooks"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Dead-Letter Queues",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Grokking Webhooks: Stop Polling, Start Pushing Data Like a Pro",
+          "url": "https://www.designgurus.io/blog/grokking-webhooks"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 13,
+      "title": "Distributed Task Queue",
+      "difficulty": 1,
+      "problem_statement": "Design a system where producers enqueue jobs and workers process them reliably with retries and backpressure.",
+      "tags": [
+        "queues",
+        "workers",
+        "backpressure",
+        "retries"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "How to Design a Message Queue Using Redis in a System Design Interview",
+          "url": "https://oneuptime.com/blog/post/2026-03-31-redis-how-to-design-a-message-queue-using-redis-i/view"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Developer Guide",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 14,
+      "title": "Distributed Cron Scheduler",
+      "difficulty": 1,
+      "problem_statement": "Design a scheduler that runs millions of recurring jobs without duplicate execution.",
+      "tags": [
+        "scheduler",
+        "leader-election",
+        "distributed-lock",
+        "queues"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Distributed Job Scheduler",
+          "url": "https://systemdesignschool.io/problems/job-scheduler/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "Distributed Scheduler: Detailed Interview Walkthrough",
+          "url": "https://www.yeetcode.in/blogs/system-design/design-task-scheduler"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "etcd Documentation",
+          "url": "https://etcd.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Developer Guide",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 15,
+      "title": "Health Check Platform",
+      "difficulty": 1,
+      "problem_statement": "Design a service that continuously checks APIs and infrastructure and reports failures with low false positives.",
+      "tags": [
+        "monitoring",
+        "health-checks",
+        "distributed-systems"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Metrics Monitoring System Design",
+          "url": "https://systemdesignschool.io/problems/metrics-monitoring/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Prometheus Documentation",
+          "url": "https://prometheus.io/docs/introduction/overview/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "OpenTelemetry Documentation",
+          "url": "https://opentelemetry.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Complete Load Balancer Guide",
+          "url": "https://www.designgurus.io/blog/complete-load-balancing-guide"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 16,
+      "title": "Key-Value Store",
+      "difficulty": 2,
+      "problem_statement": "Design a distributed key-value database supporting GET/PUT, partitioning, replication, and node failures.",
+      "tags": [
+        "NoSQL",
+        "consistent-hashing",
+        "replication",
+        "quorum"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Distributed Key-Value Store System Design",
+          "url": "https://systemdesignschool.io/problems/distributed-kv-store/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "DynamoDB Developer Guide",
+          "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Key-Value Store — ByteByteGo Walkthrough",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-key-value-store"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 17,
+      "title": "Database Sharding",
+      "difficulty": 2,
+      "problem_statement": "Design a relational database architecture that scales beyond a single database using horizontal partitioning.",
+      "tags": [
+        "sharding",
+        "partitioning",
+        "SQL",
+        "scalability"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Sharded Database",
+          "url": "https://www.staffsignal.io/playbooks/database-sharding"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Complete Database Sharding Guide",
+          "url": "https://www.designgurus.io/blog/database-sharding-guide-2026"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 18,
+      "title": "Database Replication",
+      "difficulty": 2,
+      "problem_statement": "Design a primary-replica database system with failover and read scaling.",
+      "tags": [
+        "replication",
+        "failover",
+        "consistency",
+        "SQL"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Database Replication for System Design Interviews",
+          "url": "https://www.designgurus.io/blog/database-replication"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Replication Documentation",
+          "url": "https://www.postgresql.org/docs/current/high-availability.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 19,
+      "title": "Distributed Counter",
+      "difficulty": 2,
+      "problem_statement": "Design a globally distributed counter supporting very high write throughput and eventual aggregation.",
+      "tags": [
+        "counters",
+        "aggregation",
+        "eventual-consistency",
+        "sharding"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "How to Design a Distributed Counter",
+          "url": "https://www.skillveris.com/interview-questions/system-design/how-to-design-a-distributed-counter"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis INCR Documentation",
+          "url": "https://redis.io/docs/latest/commands/incr/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Key-Value Query Cache — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/query_cache/README.md"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 20,
+      "title": "Distributed ID Service",
+      "difficulty": 2,
+      "problem_statement": "Design a multi-region ID service that remains available during regional failures.",
+      "tags": [
+        "IDs",
+        "multi-region",
+        "availability",
+        "consistency"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Design a Distributed ID Generator (Snowflake)",
+          "url": "https://vibeengines.com/systemdesign/distributed-id-generator-system-design"
+        },
+        {
+          "role": "supporting_material",
+          "type": "implementation_reference",
+          "title": "Twitter Snowflake ID Generator",
+          "url": "https://github.com/twitter-archive/snowflake"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_article",
+          "title": "Multi-Region Architecture",
+          "url": "https://sujeet.pro/articles/multi-region-architecture"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "From UUID to Snowflake: Understanding Database Fragmentation",
+          "url": "https://www.designgurus.io/blog/database-fragmentation"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 21,
+      "title": "Object Storage",
+      "difficulty": 2,
+      "problem_statement": "Design an S3-like object storage system for large files with durable storage and metadata.",
+      "tags": [
+        "object-storage",
+        "blobs",
+        "metadata",
+        "durability"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design Object Storage Like S3",
+          "url": "https://algomaster.io/learn/system-design-interviews/design-object-storage"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Cloud Storage Service (Dropbox/Google Drive Architecture)",
+          "url": "https://www.designgurus.io/blog/design-cloud-storage-service"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 22,
+      "title": "Distributed File System",
+      "difficulty": 2,
+      "problem_statement": "Design a file system that splits large files into chunks across storage nodes with replication.",
+      "tags": [
+        "file-system",
+        "chunking",
+        "replication",
+        "metadata"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Distributed File System System Design: Interview Walkthrough",
+          "url": "https://spacecomplexity.ai/blog/distributed-file-system-system-design"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "HDFS Architecture Guide",
+          "url": "https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Cloud Storage Service (Dropbox/Google Drive Architecture)",
+          "url": "https://www.designgurus.io/blog/design-cloud-storage-service"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 23,
+      "title": "File Sync Service",
+      "difficulty": 2,
+      "problem_statement": "Design Dropbox/Google Drive-like synchronization across devices with offline edits and conflict handling.",
+      "tags": [
+        "file-sync",
+        "conflicts",
+        "object-storage",
+        "metadata"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Dropbox / File Sync System Design",
+          "url": "https://systemdesignschool.io/problems/dropbox/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "engineering_blog",
+          "title": "Dropbox Engineering Blog",
+          "url": "https://dropbox.tech/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a File Storage Service Like Dropbox — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/dropbox"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 24,
+      "title": "Time-Series Database",
+      "difficulty": 2,
+      "problem_statement": "Design a database optimized for high-volume timestamped metrics with retention and aggregation.",
+      "tags": [
+        "time-series",
+        "compression",
+        "partitioning",
+        "retention"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Time-Series Database",
+          "url": "https://vibeengines.com/systemdesign/time-series-database-system-design"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Prometheus Storage",
+          "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 25,
+      "title": "Distributed Log",
+      "difficulty": 2,
+      "problem_statement": "Design an append-only distributed log supporting partitions, ordering, replication, and consumer offsets.",
+      "tags": [
+        "Kafka",
+        "logs",
+        "partitions",
+        "replication"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Pub-Sub / Message Queue System Design — Append-Only Log",
+          "url": "https://systemdesignschool.io/problems/message-queue/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "MIT Distributed Systems (6.5840)",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 26,
+      "title": "Change Data Capture",
+      "difficulty": 2,
+      "problem_statement": "Design a CDC pipeline that captures database changes and delivers them to downstream systems.",
+      "tags": [
+        "CDC",
+        "WAL",
+        "Kafka",
+        "event-driven"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Database Replication and Change Capture Concepts",
+          "url": "https://www.designgurus.io/blog/database-replication"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Debezium Documentation",
+          "url": "https://debezium.io/documentation/reference/stable/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL WAL Documentation",
+          "url": "https://www.postgresql.org/docs/current/wal-intro.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 27,
+      "title": "Data Warehouse",
+      "difficulty": 2,
+      "problem_statement": "Design a scalable analytical data warehouse supporting batch ingestion and large SQL queries.",
+      "tags": [
+        "OLAP",
+        "ETL",
+        "data-warehouse",
+        "analytics"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Cloud Data Warehouse",
+          "url": "https://certvanta.com/interview/system-design-interview-questions/design-cloud-data-warehouse"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 28,
+      "title": "Data Lake",
+      "difficulty": 2,
+      "problem_statement": "Design a low-cost storage platform for raw structured and unstructured data with batch and streaming ingestion.",
+      "tags": [
+        "data-lake",
+        "object-storage",
+        "ETL",
+        "analytics"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Data Lake Architecture for Data Engineering Interviews",
+          "url": "https://pipecode.ai/blogs/data-lake-architecture-for-data-engineering-interviews"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Cloud Storage Service (Dropbox/Google Drive Architecture)",
+          "url": "https://www.designgurus.io/blog/design-cloud-storage-service"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 29,
+      "title": "Search Index",
+      "difficulty": 2,
+      "problem_statement": "Design a distributed inverted-index system for fast keyword and filtering queries.",
+      "tags": [
+        "search",
+        "inverted-index",
+        "indexing",
+        "sharding"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Post Search / Full-Text Search System Design",
+          "url": "https://systemdesignschool.io/problems/post-search/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Build a Search Engine",
+          "url": "https://www.designgurus.io/blog/build-a-search-engine"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 30,
+      "title": "Distributed Database",
+      "difficulty": 3,
+      "problem_statement": "Design a database spanning multiple nodes and regions with replication, partitioning, and tunable consistency.",
+      "tags": [
+        "distributed-database",
+        "CAP",
+        "quorum",
+        "replication"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Design a Distributed Key-Value Store",
+          "url": "https://copilotinterview.com/blog/design-a-key-value-store"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "DynamoDB Developer Guide",
+          "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "course",
+          "title": "MIT Distributed Systems",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Design a Key-Value Store — ByteByteGo Walkthrough",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-key-value-store"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 31,
+      "title": "Message Queue",
+      "difficulty": 2,
+      "problem_statement": "Design RabbitMQ-like queues supporting acknowledgements, retries, visibility timeouts, and dead letters.",
+      "tags": [
+        "message-queue",
+        "acknowledgements",
+        "retries",
+        "backpressure"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Pub-Sub / Message Queue System Design",
+          "url": "https://systemdesignschool.io/problems/message-queue/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Developer Guide",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 32,
+      "title": "Kafka-Like Event Log",
+      "difficulty": 2,
+      "problem_statement": "Design Kafka with partitioning, replication, ordering, consumer groups, and retention.",
+      "tags": [
+        "Kafka",
+        "partitions",
+        "consumer-groups",
+        "replication"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Pub-Sub / Message Queue System Design — Kafka-Lineage Append-Only Log",
+          "url": "https://systemdesignschool.io/problems/message-queue/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "MIT Distributed Systems (6.5840)",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 33,
+      "title": "Pub/Sub System",
+      "difficulty": 2,
+      "problem_statement": "Design a publish-subscribe service supporting millions of publishers and subscribers.",
+      "tags": [
+        "pubsub",
+        "fanout",
+        "queues",
+        "delivery"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Pub/Sub System",
+          "url": "https://robinali34.github.io/blog_system_design/2025/11/29/design-pub-sub-system/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SNS Documentation",
+          "url": "https://docs.aws.amazon.com/sns/latest/dg/welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "Amazon SQS Developer Guide",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 34,
+      "title": "Dead Letter Queue",
+      "difficulty": 2,
+      "problem_statement": "Design failure handling for messages that repeatedly fail processing.",
+      "tags": [
+        "DLQ",
+        "retries",
+        "queues",
+        "observability"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "How to Design a Message Queue Using Redis",
+          "url": "https://oneuptime.com/blog/post/2026-03-31-redis-how-to-design-a-message-queue-using-redis-i/view"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Dead-Letter Queues",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon SQS Developer Guide",
+          "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 35,
+      "title": "Stream Processing System",
+      "difficulty": 3,
+      "problem_statement": "Design a system that processes continuous events and computes real-time aggregations.",
+      "tags": [
+        "stream-processing",
+        "windows",
+        "Kafka",
+        "state"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Stream Processing System (Flink / Spark Streaming)",
+          "url": "https://www.onenoughtone.com/hld-system-design/design-stream-processing"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Flink Documentation",
+          "url": "https://nightlies.apache.org/flink/flink-docs-stable/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Amazon Kinesis Documentation",
+          "url": "https://docs.aws.amazon.com/streams/latest/dev/introduction.html"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 36,
+      "title": "Exactly-Once Processing",
+      "difficulty": 3,
+      "problem_statement": "Design a pipeline that avoids duplicate business effects despite retries and crashes.",
+      "tags": [
+        "exactly-once",
+        "idempotency",
+        "transactions",
+        "Kafka"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Distributed Job Scheduler: Effectively-Once Execution and Idempotency",
+          "url": "https://systemdesignschool.io/problems/job-scheduler/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Kafka Delivery Semantics",
+          "url": "https://kafka.apache.org/documentation/#semantics"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Stripe Idempotency Documentation",
+          "url": "https://docs.stripe.com/api/idempotent_requests"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Grokking Idempotency in System Design",
+          "url": "https://www.designgurus.io/blog/grokking-idempotency"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 37,
+      "title": "Event-Driven Architecture",
+      "difficulty": 2,
+      "problem_statement": "Design an event-driven order platform where services communicate asynchronously.",
+      "tags": [
+        "events",
+        "Kafka",
+        "microservices",
+        "decoupling"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Design a Pub/Sub System",
+          "url": "https://robinali34.github.io/blog_system_design/2025/11/29/design-pub-sub-system/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 38,
+      "title": "Two-Phase Commit",
+      "difficulty": 3,
+      "problem_statement": "Design a distributed transaction coordinator for atomic updates across multiple databases.",
+      "tags": [
+        "2PC",
+        "transactions",
+        "consensus",
+        "failure"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Distributed Transactions: 2PC, Saga, and Outbox",
+          "url": "https://spawn08.github.io/system-design-interview/advanced/distributed_transactions/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Two-Phase Transactions",
+          "url": "https://www.postgresql.org/docs/current/two-phase.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "MIT Distributed Systems (6.5840)",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 39,
+      "title": "Saga Orchestrator",
+      "difficulty": 3,
+      "problem_statement": "Design a workflow that coordinates distributed business transactions using compensating actions.",
+      "tags": [
+        "Saga",
+        "transactions",
+        "microservices",
+        "compensation"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Saga Pattern Explained: Orchestration, Choreography, and Compensation",
+          "url": "https://singhajit.com/saga-pattern-distributed-transactions/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "Distributed Transactions: 2PC, Saga, and Outbox",
+          "url": "https://spawn08.github.io/system-design-interview/advanced/distributed_transactions/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS Saga Pattern",
+          "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/saga.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 40,
+      "title": "Workflow Engine",
+      "difficulty": 3,
+      "problem_statement": "Design a durable workflow engine supporting retries, timers, state, and long-running jobs.",
+      "tags": [
+        "workflow",
+        "state-machine",
+        "durability",
+        "retries"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Workflow Engine",
+          "url": "https://www.techinterview.org/post/3233465823/system-design-workflow-engine/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Airflow Documentation",
+          "url": "https://airflow.apache.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Temporal Documentation",
+          "url": "https://docs.temporal.io/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "MIT Distributed Systems (6.5840)",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 41,
+      "title": "Event Sourcing",
+      "difficulty": 3,
+      "problem_statement": "Design a system where business state is derived from an immutable event history.",
+      "tags": [
+        "event-sourcing",
+        "CQRS",
+        "events",
+        "replay"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "System Design: Event Sourcing System",
+          "url": "https://algoroq.io/system-design/design-event-sourcing/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 42,
+      "title": "CQRS System",
+      "difficulty": 3,
+      "problem_statement": "Design separate read and write models while keeping them synchronized through events.",
+      "tags": [
+        "CQRS",
+        "read-model",
+        "events",
+        "eventual-consistency"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "CQRS Pattern in System Design Interviews",
+          "url": "https://www.systemdesignhandbook.com/guides/cqrs-pattern/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Microsoft CQRS Pattern",
+          "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 43,
+      "title": "Leader Election",
+      "difficulty": 3,
+      "problem_statement": "Design leader election for a cluster where only one node performs coordinator duties.",
+      "tags": [
+        "leader-election",
+        "consensus",
+        "etcd",
+        "failure"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Safe Leader Election Service",
+          "url": "https://offer.cc/interview-questions/system-design-interview-design-a-safe-leader-election-service"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "etcd Documentation",
+          "url": "https://etcd.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "course",
+          "title": "MIT Distributed Systems",
+          "url": "https://pdos.csail.mit.edu/6.824/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 44,
+      "title": "Twitter/X Timeline",
+      "difficulty": 3,
+      "problem_statement": "Design a social feed where users follow others and receive a personalized timeline at huge scale.",
+      "tags": [
+        "feed",
+        "fanout",
+        "caching",
+        "ranking"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Twitter System Design",
+          "url": "https://systemdesignschool.io/problems/twitter/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design Twitter Timeline and Search — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/twitter/README.md"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 45,
+      "title": "Instagram",
+      "difficulty": 3,
+      "problem_statement": "Design photo/video sharing with feeds, uploads, likes, comments, and high read traffic.",
+      "tags": [
+        "media",
+        "feed",
+        "CDN",
+        "object-storage"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Instagram System Design (Photo Upload + Timeline)",
+          "url": "https://systemdesignschool.io/problems/instagram/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Photo Sharing App Like Instagram — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/instagram"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 46,
+      "title": "Facebook News Feed",
+      "difficulty": 3,
+      "problem_statement": "Design a personalized feed supporting billions of relationships and ranking.",
+      "tags": [
+        "feed",
+        "fanout",
+        "ranking",
+        "cache"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "News Feed System Design",
+          "url": "https://systemdesignschool.io/problems/news-feed/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design Facebook's News Feed — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/fb-news-feed"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 47,
+      "title": "Reddit",
+      "difficulty": 3,
+      "problem_statement": "Design communities with posts, comments, voting, ranking, moderation, and hot-content caching.",
+      "tags": [
+        "social",
+        "ranking",
+        "caching",
+        "search"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design Reddit: Voting, Ranking, Comments, and Subreddits",
+          "url": "https://www.techinterview.org/post/3233474338/system-design-design-reddit-social-news-upvote-downvote-ranking-subreddits-comments-threading-moderation-karma/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design Social Graph — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/social_graph/README.md"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 48,
+      "title": "LinkedIn",
+      "difficulty": 3,
+      "problem_statement": "Design a professional social network with profiles, connections, feed, search, and notifications.",
+      "tags": [
+        "social-graph",
+        "feed",
+        "search",
+        "notifications"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Social Graph Design — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/social_graph/README.md"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "System Design Primer",
+          "url": "https://github.com/donnemartin/system-design-primer"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 49,
+      "title": "WhatsApp",
+      "difficulty": 3,
+      "problem_statement": "Design a globally distributed chat system supporting one-to-one and group messaging.",
+      "tags": [
+        "chat",
+        "WebSocket",
+        "presence",
+        "message-delivery"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "WhatsApp System Design",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/whatsapp"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "ByteByteGo: Design a Chat System",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-chat-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_walkthrough",
+          "title": "Design WhatsApp",
+          "url": "https://www.designgurus.io/course-play/system-design-interview-crash-course/doc/design-whatsapp"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 50,
+      "title": "Telegram",
+      "difficulty": 3,
+      "problem_statement": "Design a messaging platform with large groups, media, synchronization, and multi-device sessions.",
+      "tags": [
+        "chat",
+        "groups",
+        "media",
+        "sync"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Real-Time Chat Application System Design",
+          "url": "https://www.designgurus.io/blog/design-chat-application"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "ByteByteGo: Design a Chat System",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-chat-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 51,
+      "title": "Discord",
+      "difficulty": 3,
+      "problem_statement": "Design real-time communities with channels, presence, messaging, and large concurrent groups.",
+      "tags": [
+        "WebSocket",
+        "presence",
+        "pubsub",
+        "chat"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Design a Chat System",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-chat-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Real-Time Chat Application (WhatsApp/Slack)",
+          "url": "https://www.designgurus.io/blog/design-chat-application"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "WebRTC Documentation",
+          "url": "https://webrtc.org/getting-started/overview"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 52,
+      "title": "YouTube",
+      "difficulty": 4,
+      "problem_statement": "Design video upload, transcoding, storage, CDN delivery, metadata, comments, and views.",
+      "tags": [
+        "video",
+        "transcoding",
+        "CDN",
+        "object-storage"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "YouTube System Design",
+          "url": "https://systemdesignschool.io/problems/youtube/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Video Streaming Platform Like YouTube — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/youtube"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 53,
+      "title": "Netflix",
+      "difficulty": 4,
+      "problem_statement": "Design global video streaming with content storage, encoding, CDN, recommendations, and playback.",
+      "tags": [
+        "video",
+        "CDN",
+        "streaming",
+        "recommendation"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Netflix System Design",
+          "url": "https://systemdesignschool.io/problems/netflix/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Netflix System Design Interview Guide: Video Streaming and CDN",
+          "url": "https://www.designgurus.io/blog/netflix-system-design-interview-questions-guide"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 54,
+      "title": "Spotify",
+      "difficulty": 4,
+      "problem_statement": "Design music streaming with catalogs, playlists, search, playback, recommendations, and offline mode.",
+      "tags": [
+        "streaming",
+        "CDN",
+        "search",
+        "recommendation"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design Spotify: Streaming, Playlists, and Discover Weekly",
+          "url": "https://www.yeetcode.in/blogs/system-design/design-spotify"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Netflix System Design Interview Guide: Video Streaming and CDN",
+          "url": "https://www.designgurus.io/blog/netflix-system-design-interview-questions-guide"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 55,
+      "title": "TikTok",
+      "difficulty": 4,
+      "problem_statement": "Design short-video upload, processing, personalized feed, ranking, and viral-content delivery.",
+      "tags": [
+        "video",
+        "recommendation",
+        "feed",
+        "CDN"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "How to Design a Recommendation System",
+          "url": "https://www.designgurus.io/blog/design-recommendation-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Amazon S3 Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 56,
+      "title": "News Aggregator",
+      "difficulty": 3,
+      "problem_statement": "Design a platform that crawls publishers, deduplicates stories, ranks articles, and serves personalized feeds.",
+      "tags": [
+        "crawler",
+        "deduplication",
+        "ranking",
+        "feed"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "News Aggregator System Design",
+          "url": "https://systemdesignschool.io/problems/news-aggregator/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "Web Crawler System Design",
+          "url": "https://systemdesignschool.io/problems/web-crawler/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Social Media News Feed",
+          "url": "https://www.designgurus.io/blog/design-social-media-news-feed"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 57,
+      "title": "Trending Topics",
+      "difficulty": 3,
+      "problem_statement": "Design a system that detects trending topics from a massive real-time stream.",
+      "tags": [
+        "stream-processing",
+        "aggregation",
+        "ranking",
+        "Kafka"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Top K / Trending System Design",
+          "url": "https://systemdesignschool.io/problems/topk/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design Amazon Sales Ranking by Category — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/sales_rank/README.md"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 58,
+      "title": "Google Search",
+      "difficulty": 4,
+      "problem_statement": "Design a web search engine with crawling, indexing, ranking, serving, and freshness updates.",
+      "tags": [
+        "search",
+        "crawler",
+        "inverted-index",
+        "ranking"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "How to Build a Search Engine",
+          "url": "https://www.designgurus.io/blog/build-a-search-engine"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "System Design Primer",
+          "url": "https://github.com/donnemartin/system-design-primer"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 59,
+      "title": "Web Crawler",
+      "difficulty": 3,
+      "problem_statement": "Design a distributed crawler that discovers URLs, respects policies, deduplicates work, and scales horizontally.",
+      "tags": [
+        "crawler",
+        "queues",
+        "deduplication",
+        "distributed-systems"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Web Crawler System Design",
+          "url": "https://systemdesignschool.io/problems/web-crawler/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "standard",
+          "title": "Robots Exclusion Protocol (RFC 9309)",
+          "url": "https://www.rfc-editor.org/rfc/rfc9309"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Web Crawler from Scratch",
+          "url": "https://www.designgurus.io/blog/design-web-crawler"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 60,
+      "title": "Autocomplete",
+      "difficulty": 2,
+      "problem_statement": "Design low-latency typeahead suggestions for millions of users.",
+      "tags": [
+        "autocomplete",
+        "trie",
+        "caching",
+        "ranking"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Typeahead / Autocomplete System Design",
+          "url": "https://systemdesignschool.io/problems/typeahead/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Search-as-you-type",
+          "url": "https://www.elastic.co/guide/en/elasticsearch/reference/current/search-as-you-type.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Build a Search Engine",
+          "url": "https://www.designgurus.io/blog/build-a-search-engine"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 61,
+      "title": "Distributed Search Engine",
+      "difficulty": 4,
+      "problem_statement": "Design a search service with sharded indexes, replication, ranking, and query fanout.",
+      "tags": [
+        "search",
+        "sharding",
+        "replication",
+        "ranking"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Post Search / Full-Text Search System Design",
+          "url": "https://systemdesignschool.io/problems/post-search/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Build a Search Engine",
+          "url": "https://www.designgurus.io/blog/build-a-search-engine"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 62,
+      "title": "Amazon Product Search",
+      "difficulty": 3,
+      "problem_statement": "Design product search with text queries, filters, facets, sorting, and ranking.",
+      "tags": [
+        "search",
+        "facets",
+        "indexing",
+        "ranking"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "How to Build a Search Engine",
+          "url": "https://www.designgurus.io/blog/build-a-search-engine"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 63,
+      "title": "Recommendation System",
+      "difficulty": 4,
+      "problem_statement": "Design a generic recommendation platform supporting candidate generation, ranking, feedback, and online serving.",
+      "tags": [
+        "recommendation",
+        "ML",
+        "ranking",
+        "feature-store"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "How to Design a Recommendation System",
+          "url": "https://www.designgurus.io/blog/design-recommendation-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "engineering_blog",
+          "title": "AWS Machine Learning Blog",
+          "url": "https://aws.amazon.com/blogs/machine-learning/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "ByteByteGo System Design Course",
+          "url": "https://bytebytego.com/courses/system-design-interview"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 64,
+      "title": "Netflix Recommendation",
+      "difficulty": 4,
+      "problem_statement": "Design personalized movie/show recommendations with offline training and online ranking.",
+      "tags": [
+        "recommendation",
+        "ML",
+        "ranking",
+        "streaming"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design Netflix Recommendations",
+          "url": "https://interviewlegend.com/guides/companies/netflix/system-design/design-recommendation"
+        },
+        {
+          "role": "supporting_material",
+          "type": "engineering_blog",
+          "title": "Netflix Technology Blog",
+          "url": "https://netflixtechblog.com/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "engineering_blog",
+          "title": "AWS Machine Learning Blog",
+          "url": "https://aws.amazon.com/blogs/machine-learning/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Recommendation System",
+          "url": "https://www.designgurus.io/blog/design-recommendation-system"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 65,
+      "title": "News Feed Ranking",
+      "difficulty": 4,
+      "problem_statement": "Design a ranking service that scores millions of candidate posts per user in near real time.",
+      "tags": [
+        "ranking",
+        "ML",
+        "feed",
+        "caching"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "News Feed System Design",
+          "url": "https://systemdesignschool.io/problems/news-feed/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Social Media News Feed",
+          "url": "https://www.designgurus.io/blog/design-social-media-news-feed"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 66,
+      "title": "Amazon Sales Ranking",
+      "difficulty": 3,
+      "problem_statement": "Design a real-time product/category sales ranking system.",
+      "tags": [
+        "ranking",
+        "stream-processing",
+        "aggregation",
+        "caching"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design Amazon Sales Ranking by Category — System Design Primer Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/sales_rank/README.md"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 67,
+      "title": "Real-Time Chat",
+      "difficulty": 3,
+      "problem_statement": "Design a generic chat service with WebSockets, message persistence, delivery receipts, and offline messages.",
+      "tags": [
+        "chat",
+        "WebSocket",
+        "queues",
+        "presence"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Chat App System Design: WhatsApp / Messenger Architecture",
+          "url": "https://systemdesignschool.io/problems/chatapp/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "ByteByteGo: Design a Chat System",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-chat-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Real-Time Chat Application (WhatsApp/Slack)",
+          "url": "https://www.designgurus.io/blog/design-chat-application"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 68,
+      "title": "Presence System",
+      "difficulty": 3,
+      "problem_statement": "Design online/offline presence for hundreds of millions of users with heartbeat-based detection.",
+      "tags": [
+        "presence",
+        "heartbeats",
+        "Redis",
+        "WebSocket"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Chat App System Design: Presence and Delivery",
+          "url": "https://systemdesignschool.io/problems/chatapp/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "ByteByteGo: Design a Chat System",
+          "url": "https://bytebytego.com/courses/system-design-interview/design-a-chat-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Real-Time Chat Application (WhatsApp/Slack)",
+          "url": "https://www.designgurus.io/blog/design-chat-application"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 69,
+      "title": "Live Location Tracking",
+      "difficulty": 3,
+      "problem_statement": "Design real-time location updates for users/devices with high write volume and privacy controls.",
+      "tags": [
+        "location",
+        "streaming",
+        "geospatial",
+        "WebSocket"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Uber / Nearby Drivers System Design",
+          "url": "https://systemdesignschool.io/problems/uber/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Geospatial Commands",
+          "url": "https://redis.io/docs/latest/develop/data-types/geospatial/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "OpenStreetMap Wiki",
+          "url": "https://wiki.openstreetmap.org/wiki/Main_Page"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Ride Sharing Service",
+          "url": "https://www.designgurus.io/blog/ride-sharing-service"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 70,
+      "title": "Uber",
+      "difficulty": 4,
+      "problem_statement": "Design ride-hailing with driver location, rider matching, trip state, pricing, and real-time updates.",
+      "tags": [
+        "geospatial",
+        "matching",
+        "real-time",
+        "payments"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Uber / Nearby Drivers System Design",
+          "url": "https://systemdesignschool.io/problems/uber/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Geospatial Commands",
+          "url": "https://redis.io/docs/latest/develop/data-types/geospatial/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "OpenStreetMap Wiki",
+          "url": "https://wiki.openstreetmap.org/wiki/Main_Page"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Ride-Sharing Service Like Uber — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/uber"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 71,
+      "title": "Food Delivery",
+      "difficulty": 4,
+      "problem_statement": "Design food delivery dispatch with restaurants, drivers, orders, location tracking, and ETA.",
+      "tags": [
+        "dispatch",
+        "geospatial",
+        "real-time",
+        "orders"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Food Delivery System (DoorDash / Uber Eats)",
+          "url": "https://www.systemdesigninterview.com/guides/system-design-interview-handbook/811-design-a-food-delivery-system-doordash-uber-eats"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Geospatial Commands",
+          "url": "https://redis.io/docs/latest/develop/data-types/geospatial/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Ride Sharing Service",
+          "url": "https://www.designgurus.io/blog/ride-sharing-service"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 72,
+      "title": "Google Maps",
+      "difficulty": 5,
+      "problem_statement": "Design mapping/search/routing infrastructure for locations, routes, traffic, and map tiles.",
+      "tags": [
+        "maps",
+        "routing",
+        "geospatial",
+        "distributed-systems"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Google Maps System Design",
+          "url": "https://systemdesignschool.io/problems/google-map/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "OpenStreetMap Wiki",
+          "url": "https://wiki.openstreetmap.org/wiki/Main_Page"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Ride Sharing Service",
+          "url": "https://www.designgurus.io/blog/ride-sharing-service"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 73,
+      "title": "Nearby Places Search",
+      "difficulty": 3,
+      "problem_statement": "Design a low-latency service that returns nearby businesses ordered by distance and relevance.",
+      "tags": [
+        "geospatial",
+        "geohash",
+        "search",
+        "caching"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Yelp / Nearby Places Search System Design",
+          "url": "https://systemdesignschool.io/problems/yelp/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Geospatial Commands",
+          "url": "https://redis.io/docs/latest/develop/data-types/geospatial/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Geo Queries",
+          "url": "https://www.elastic.co/guide/en/elasticsearch/reference/current/geo-queries.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Design a Local Business Review/Search Site Like Yelp — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/yelp"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 74,
+      "title": "Ride Matching",
+      "difficulty": 4,
+      "problem_statement": "Design a service that matches riders to nearby available drivers under changing supply and demand.",
+      "tags": [
+        "matching",
+        "geospatial",
+        "real-time",
+        "optimization"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Uber / Nearby Drivers System Design",
+          "url": "https://systemdesignschool.io/problems/uber/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Geospatial Commands",
+          "url": "https://redis.io/docs/latest/develop/data-types/geospatial/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Ride Sharing Service",
+          "url": "https://www.designgurus.io/blog/ride-sharing-service"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 75,
+      "title": "E-Commerce Platform",
+      "difficulty": 4,
+      "problem_statement": "Design an Amazon-like commerce platform with catalog, search, cart, checkout, orders, payments, and inventory.",
+      "tags": [
+        "ecommerce",
+        "microservices",
+        "search",
+        "transactions"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Scalable E-Commerce Platform",
+          "url": "https://www.designgurus.io/blog/design-scalable-e-commerce-platform"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Stripe Documentation",
+          "url": "https://docs.stripe.com/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "Designing an Online Payment Processing System",
+          "url": "https://www.designgurus.io/blog/design-online-payment-processing-system"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 76,
+      "title": "Shopping Cart",
+      "difficulty": 2,
+      "problem_statement": "Design a highly available cart supporting anonymous users, login merge, expiration, and concurrent updates.",
+      "tags": [
+        "cart",
+        "Redis",
+        "consistency",
+        "sessions"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Shopping Cart System",
+          "url": "https://thedesignround.com/system-design/problems/67-shopping-cart-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Scalable E-Commerce Platform",
+          "url": "https://www.designgurus.io/blog/design-scalable-e-commerce-platform"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 77,
+      "title": "Inventory Management",
+      "difficulty": 4,
+      "problem_statement": "Design inventory reservation and stock updates that prevent overselling during flash sales.",
+      "tags": [
+        "inventory",
+        "concurrency",
+        "transactions",
+        "queues"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design an Inventory Management System",
+          "url": "https://www.systemdesignhandbook.com/guides/design-inventory-management-system/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Transaction Documentation",
+          "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Scalable E-Commerce Platform",
+          "url": "https://www.designgurus.io/blog/design-scalable-e-commerce-platform"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 78,
+      "title": "Payment Gateway",
+      "difficulty": 4,
+      "problem_statement": "Design a payment service supporting authorization, capture, retries, idempotency, webhooks, and reconciliation.",
+      "tags": [
+        "payments",
+        "idempotency",
+        "webhooks",
+        "transactions"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Payment Gateway System",
+          "url": "https://tech.latencot.com/design-a-payment-gateway-system-system-design-question"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Stripe Payment Intents",
+          "url": "https://docs.stripe.com/payments/payment-intents"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Stripe Idempotency",
+          "url": "https://docs.stripe.com/api/idempotent_requests"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Designing an Online Payment Processing System",
+          "url": "https://www.designgurus.io/blog/design-online-payment-processing-system"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 79,
+      "title": "Digital Wallet",
+      "difficulty": 4,
+      "problem_statement": "Design a wallet with deposits, withdrawals, transfers, immutable ledger entries, and balance consistency.",
+      "tags": [
+        "wallet",
+        "ledger",
+        "ACID",
+        "transactions"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Digital Wallet",
+          "url": "https://spacecomplexity.ai/blog/digital-wallet-system-design-interview"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Transaction Documentation",
+          "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Stripe Idempotency",
+          "url": "https://docs.stripe.com/api/idempotent_requests"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Designing an Online Payment Processing System",
+          "url": "https://www.designgurus.io/blog/design-online-payment-processing-system"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 80,
+      "title": "Banking Transactions",
+      "difficulty": 5,
+      "problem_statement": "Design a banking transaction system that guarantees correct balances and durable audit history.",
+      "tags": [
+        "banking",
+        "ACID",
+        "ledger",
+        "consistency"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "Payment System Design",
+          "url": "https://systemdesignschool.io/problems/payment-system/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Transaction Documentation",
+          "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "Design a Digital Wallet",
+          "url": "https://spacecomplexity.ai/blog/digital-wallet-system-design-interview"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Designing an Online Payment Processing System",
+          "url": "https://www.designgurus.io/blog/design-online-payment-processing-system"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 81,
+      "title": "Stock Trading System",
+      "difficulty": 5,
+      "problem_statement": "Design a trading platform handling orders, matching, market data, portfolios, and strict ordering.",
+      "tags": [
+        "trading",
+        "order-book",
+        "low-latency",
+        "consistency"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a Stock Trading Platform",
+          "url": "https://dsasolved.com/system-design/design-stock-trading-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "PostgreSQL Documentation",
+          "url": "https://www.postgresql.org/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Designing an Online Payment Processing System",
+          "url": "https://www.designgurus.io/blog/design-online-payment-processing-system"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 82,
+      "title": "Google Docs",
+      "difficulty": 5,
+      "problem_statement": "Design collaborative document editing with concurrent edits, version history, sharing, and low-latency synchronization.",
+      "tags": [
+        "collaboration",
+        "CRDT",
+        "OT",
+        "WebSocket"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Google Docs / Collaborative Editing System Design",
+          "url": "https://systemdesignschool.io/problems/google-docs/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "CRDTs for Collaborative Editing — Yjs Documentation",
+          "url": "https://docs.yjs.dev/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "System Design Primer: Google Docs Solution",
+          "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/google_docs/README.md"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "Design a Collaborative Document Editor Like Google Docs — Hello Interview",
+          "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/google-docs"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 83,
+      "title": "Monitoring & Alerting",
+      "difficulty": 3,
+      "problem_statement": "Design metrics ingestion, aggregation, dashboards, alert evaluation, and notification routing.",
+      "tags": [
+        "observability",
+        "metrics",
+        "alerts",
+        "time-series"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Metrics Monitoring System Design",
+          "url": "https://systemdesignschool.io/problems/metrics-monitoring/solution"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Prometheus Documentation",
+          "url": "https://prometheus.io/docs/introduction/overview/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "OpenTelemetry Documentation",
+          "url": "https://opentelemetry.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 84,
+      "title": "Distributed Logging",
+      "difficulty": 3,
+      "problem_statement": "Design centralized log ingestion, indexing, retention, search, and high-volume querying.",
+      "tags": [
+        "logging",
+        "Elasticsearch",
+        "Kafka",
+        "object-storage"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "How to Design a Distributed Logging System",
+          "url": "https://www.systemdesignhandbook.com/guides/design-a-distributed-logging-system/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "OpenTelemetry Documentation",
+          "url": "https://opentelemetry.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Elasticsearch Guide",
+          "url": "https://www.elastic.co/guide/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Apache Kafka Documentation",
+          "url": "https://kafka.apache.org/documentation/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 85,
+      "title": "ML Model Serving",
+      "difficulty": 5,
+      "problem_statement": "Design a model-serving platform supporting versioning, autoscaling, feature retrieval, inference, and monitoring.",
+      "tags": [
+        "ML",
+        "inference",
+        "autoscaling",
+        "feature-store"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "ML Model Serving & Inference Platform",
+          "url": "https://harut8.github.io/system-design/tasks/ml-inference-platform/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "AWS SageMaker Inference Documentation",
+          "url": "https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "OpenTelemetry Documentation",
+          "url": "https://opentelemetry.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Recommendation System",
+          "url": "https://www.designgurus.io/blog/design-recommendation-system"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 86,
+      "title": "LLM Chat System",
+      "difficulty": 5,
+      "problem_statement": "Design a ChatGPT-like service with streaming responses, conversation history, model routing, rate limits, and cost controls.",
+      "tags": [
+        "LLM",
+        "streaming",
+        "rate-limiting",
+        "distributed-systems"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design ChatGPT: LLM Chat Application System Design",
+          "url": "https://prepflix.co.in/blogs/design-chatgpt-llm-chat-application-system-design"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "OpenAI API Documentation",
+          "url": "https://platform.openai.com/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "NVIDIA TensorRT-LLM Documentation",
+          "url": "https://nvidia.github.io/TensorRT-LLM/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 87,
+      "title": "RAG Platform",
+      "difficulty": 5,
+      "problem_statement": "Design a production RAG system covering ingestion, chunking, embeddings, vector search, retrieval, generation, and evaluation.",
+      "tags": [
+        "RAG",
+        "vector-db",
+        "embeddings",
+        "LLM"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Design a RAG System: Interview Framework and Trade-offs",
+          "url": "https://neuraprep.com/blog/rag-system-design-interview/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "alternate_solution",
+          "title": "Production RAG System Design",
+          "url": "https://www.interviewsvector.com/blog/design-production-rag-system-2026"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_material",
+          "title": "Pinecone Learning Center",
+          "url": "https://www.pinecone.io/learn/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_guide_or_docs",
+          "title": "LangChain Retrieval Documentation",
+          "url": "https://python.langchain.com/docs/concepts/retrieval/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 88,
+      "title": "Content Delivery Network",
+      "difficulty": 2,
+      "problem_statement": "Design a CDN that caches static and dynamic content globally, handles cache invalidation, origin failures, and traffic spikes.",
+      "tags": [
+        "CDN",
+        "caching",
+        "edge",
+        "availability"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "CDN Architecture in System Design",
+          "url": "https://www.designgurus.io/blog/content-delivery-network-cdn-system-design-basics"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Amazon CloudFront Documentation",
+          "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_material",
+          "title": "Cloudflare Learning Center",
+          "url": "https://www.cloudflare.com/learning/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "AWS Architecture Center",
+          "url": "https://aws.amazon.com/architecture/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 89,
+      "title": "Distributed Rate Counter",
+      "difficulty": 3,
+      "problem_statement": "Design a globally distributed counter service that supports atomic increments, high throughput, approximate counting, and aggregation.",
+      "tags": [
+        "counters",
+        "Redis",
+        "sharding",
+        "eventual-consistency"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "How to Design a Distributed Counter",
+          "url": "https://www.skillveris.com/interview-questions/system-design/how-to-design-a-distributed-counter"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis INCR Documentation",
+          "url": "https://redis.io/docs/latest/commands/incr/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "Redis Rate Limiting Pattern",
+          "url": "https://redis.io/docs/latest/develop/use/patterns/rate-limiting/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "problem_solution_walkthrough",
+          "title": "How to Design a Rate Limiter: Algorithms, Architecture, and Trade-offs",
+          "url": "https://www.designgurus.io/blog/grokking-rate-limiters"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 90,
+      "title": "API Versioning Platform",
+      "difficulty": 2,
+      "problem_statement": "Design an API platform supporting multiple API versions, backward compatibility, gradual migrations, deprecation, and observability.",
+      "tags": [
+        "API",
+        "versioning",
+        "backward-compatibility",
+        "microservices"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "related_problem_walkthrough",
+          "match_type": "closest_available",
+          "title": "API Design and Versioning: Backward Compatibility",
+          "url": "https://github.com/microsoftdocs/architecture-center/blob/main/docs/microservices/design/api-design.md"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "GraphQL Documentation",
+          "url": "https://graphql.org/learn/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Load Balancer vs. Reverse Proxy vs. API Gateway",
+          "url": "https://www.designgurus.io/blog/load-balancer-reverse-proxy-api-gateway"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "gRPC Documentation",
+          "url": "https://grpc.io/docs/"
+        }
+      ],
+      "resource_note": "No exact end-to-end walkthrough was selected for this exact prompt; the main link covers the closest relevant system or concept. Supporting links add problem-specific technical depth."
+    },
+    {
+      "id": 91,
+      "title": "Feature Flag Service",
+      "difficulty": 2,
+      "problem_statement": "Design a globally available feature-flag service with targeting rules, percentage rollouts, instant rollback, and local caching.",
+      "tags": [
+        "feature-flags",
+        "configuration",
+        "caching",
+        "rollouts"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "How to Design a Feature Flag System",
+          "url": "https://www.skillveris.com/interview-questions/system-design/how-to-design-a-feature-flag-system"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "OpenFeature Documentation",
+          "url": "https://openfeature.dev/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "official_docs",
+          "title": "etcd Documentation",
+          "url": "https://etcd.io/docs/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "reference",
+          "title": "Redis Documentation",
+          "url": "https://redis.io/docs/latest/"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    },
+    {
+      "id": 92,
+      "title": "Multi-Region Active-Active System",
+      "difficulty": 5,
+      "problem_statement": "Design an application deployed across regions that continues serving traffic during a regional outage while handling data conflicts.",
+      "tags": [
+        "multi-region",
+        "active-active",
+        "conflict-resolution",
+        "consistency"
+      ],
+      "resources": [
+        {
+          "role": "main",
+          "type": "problem_solution_walkthrough",
+          "match_type": "direct",
+          "title": "Multi-Region Architecture: Active-Active, Failover, and Conflict Resolution",
+          "url": "https://mortalapps.com/system-design/distributed-coordination/multi-region-architecture/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "supporting_article",
+          "title": "Multi-Region Architecture",
+          "url": "https://sujeet.pro/articles/multi-region-architecture"
+        },
+        {
+          "role": "supporting_material",
+          "type": "book",
+          "title": "Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        },
+        {
+          "role": "supporting_material",
+          "type": "related_problem_walkthrough",
+          "title": "Grokking Database Replication for System Design Interviews",
+          "url": "https://www.designgurus.io/blog/database-replication"
+        }
+      ],
+      "resource_note": "The main link is a walkthrough focused on this problem."
+    }
+  ],
+  "resource_schema_note": "Resources are ordered: first is the main problem solution/walkthrough; remaining entries are supporting material. main.type=problem_solution_walkthrough and match_type=direct means the walkthrough is specifically about the named problem. main.type=related_problem_walkthrough and match_type=closest_available means it is the closest relevant public problem guide, not an exact solution. Supporting material may include official documentation, implementation references, or books for the technologies and trade-offs in the prompt.",
+  "resource_quality_note": "Primary links were re-selected to avoid generic system-design overview pages. The exact prompt 'Distributed Cron Scheduler' points to a dedicated job-scheduler walkthrough covering recurring schedules, leases, crash recovery, peak dispatch, and duplicate suppression."
+}
