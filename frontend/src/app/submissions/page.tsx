@@ -7,6 +7,8 @@ import { FileCode2, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SubmissionModal from '@/components/SubmissionModal';
 
+import { getUserTheme, resolveDisplayName } from '@/lib/userTheme';
+
 interface Submission {
   submissionId: string;
   username: string;
@@ -21,21 +23,15 @@ interface Submission {
   analysis?: any;
 }
 
-const USER_THEME_COLORS: Record<string, string> = {
-  nishanttheprogrammer: '99, 102, 241',
-  mohittheprogrammer:   '245, 158, 11',
-  surajsingh542:        '16, 185, 129',
-  harshit_sodhani:      '168, 85, 247',
-};
-
-const USERS = ['All', 'nishanttheprogrammer', 'mohittheprogrammer', 'surajsingh542', 'harshit_sodhani'];
-
 export default function SubmissionsPage() {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [filter, setFilter]           = useState('All');
-  const [selectedSub, setSelectedSub] = useState<Submission | null>(null);
-  const [avatars, setAvatars]         = useState<Record<string, string>>({});
+  const [submissions, setSubmissions]   = useState<Submission[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [filter, setFilter]             = useState('All');
+  const [selectedSub, setSelectedSub]   = useState<Submission | null>(null);
+  const [avatars, setAvatars]           = useState<Record<string, string>>({});
+  const [userColors, setUserColors]     = useState<Record<string, string>>({});
+  const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
+  const [userList, setUserList]         = useState<string[]>(['All']);
 
   useEffect(() => {
     async function fetchSubmissions() {
@@ -57,13 +53,48 @@ export default function SubmissionsPage() {
         const winterArcData = dedupedData.filter(sub => sub.date >= '2026-10-01' && sub.date <= '2026-12-31');
         setSubmissions(winterArcData);
 
+        // Fetch participants and users dynamically from Firestore
         const partSnap = await getDocs(collection(db, 'participants'));
         const avatarMap: Record<string, string> = {};
+        const colorMap: Record<string, string> = {};
+        const nameMap: Record<string, string> = {};
+        const participantUsernames: string[] = [];
+
         partSnap.docs.forEach(doc => {
           const data = doc.data();
-          if (data.username && data.avatar) avatarMap[data.username] = data.avatar;
+          if (data.username) {
+            participantUsernames.push(data.username);
+            if (data.avatar) avatarMap[data.username] = data.avatar;
+            if (data.themeColor) colorMap[data.username] = data.themeColor;
+            if (data.displayName) nameMap[data.username] = data.displayName;
+          }
         });
+
+        const usersSnap = await getDocs(collection(db, 'users'));
+        usersSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.username) {
+            if (!participantUsernames.includes(data.username)) {
+              participantUsernames.push(data.username);
+            }
+            if (data.displayName && !nameMap[data.username]) {
+              nameMap[data.username] = data.displayName;
+            }
+            if (data.themeColor && !colorMap[data.username]) {
+              colorMap[data.username] = data.themeColor;
+            }
+          }
+        });
+
+        // Combine with all submission usernames so no one is missed
+        const allUsernames = Array.from(
+          new Set([...participantUsernames, ...winterArcData.map(s => s.username)])
+        ).sort();
+
+        setUserList(['All', ...allUsernames]);
         setAvatars(avatarMap);
+        setUserColors(colorMap);
+        setDisplayNames(nameMap);
       } catch (err) {
         console.error('Failed to fetch submissions:', err);
       } finally {
@@ -75,8 +106,10 @@ export default function SubmissionsPage() {
 
   const filtered = filter === 'All' ? submissions : submissions.filter(s => s.username === filter);
 
-  const getInitial = (username: string) =>
-    ({ nishanttheprogrammer: 'N', mohittheprogrammer: 'M', surajsingh542: 'S', harshit_sodhani: 'H' }[username] ?? username.charAt(0).toUpperCase());
+  const getInitial = (username: string) => {
+    const dName = displayNames[username] || resolveDisplayName(username, displayNames);
+    return (dName.charAt(0) || username.charAt(0)).toUpperCase();
+  };
 
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10">
@@ -100,9 +133,9 @@ export default function SubmissionsPage() {
             className="appearance-none pl-4 pr-10 py-2 rounded-xl text-sm font-medium text-slate-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
-            {USERS.map(u => (
+            {userList.map(u => (
               <option key={u} value={u} style={{ background: '#1e1e3a' }}>
-                {u === 'All' ? 'All Users' : u}
+                {u === 'All' ? 'All Users' : (displayNames[u] ? `${displayNames[u]} (@${u})` : `@${u}`)}
               </option>
             ))}
           </select>
@@ -143,8 +176,12 @@ export default function SubmissionsPage() {
                 />
               ) : (
                 <div
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                  style={{ background: 'rgba(99,102,241,0.5)' }}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-sm font-bold shadow-sm flex-shrink-0"
+                  style={{
+                    background: getUserTheme(sub.username, userColors[sub.username]).bg,
+                    border: `1px solid ${getUserTheme(sub.username, userColors[sub.username]).border}`,
+                    color: getUserTheme(sub.username, userColors[sub.username]).stroke,
+                  }}
                 >
                   {getInitial(sub.username)}
                 </div>
@@ -201,6 +238,7 @@ export default function SubmissionsPage() {
           setSelectedSub={setSelectedSub}
           submissions={submissions}
           avatars={avatars}
+          userColors={userColors}
         />
       </AnimatePresence>
     </div>

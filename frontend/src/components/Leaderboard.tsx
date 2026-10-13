@@ -6,6 +6,8 @@ import { Trophy, Cpu, Code2, BookOpen } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
+import { resolveDisplayName, getUserTheme } from '@/lib/userTheme';
+
 interface UserScore {
   username: string;
   displayName: string;
@@ -15,13 +17,6 @@ interface UserScore {
   readabilityScore: number;
   approach: string;
 }
-
-const DISPLAY_NAMES: Record<string, string> = {
-  nishanttheprogrammer: 'Nishant',
-  mohittheprogrammer:   'Mohit',
-  surajsingh542:        'Suraj',
-  harshit_sodhani:      'Harshit',
-};
 
 const RANK_STYLES = [
   { bg: 'linear-gradient(135deg,#fbbf24,#d97706)', text: '🥇' },
@@ -33,12 +28,23 @@ interface LeaderboardProps {
   date: string;
   daySubmissions?: any[];
   avatars?: Record<string, string>;
+  displayNames?: Record<string, string>;
+  userColors?: Record<string, string>;
   qotdSlug?: string;
   loading?: boolean;
   onRowClick?: (username: string) => void;
 }
 
-export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, loading: externalLoading, onRowClick }: LeaderboardProps) {
+export default function Leaderboard({
+  date,
+  daySubmissions,
+  avatars,
+  displayNames,
+  userColors,
+  qotdSlug,
+  loading: externalLoading,
+  onRowClick,
+}: LeaderboardProps) {
   const [scores, setScores] = useState<UserScore[]>([]);
   const [internalLoading, setInternalLoading] = useState(false);
   const loading = externalLoading !== undefined ? externalLoading : internalLoading;
@@ -76,7 +82,7 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, l
 
         return {
           username: sub.username,
-          displayName: DISPLAY_NAMES[sub.username] ?? sub.username,
+          displayName: sub.displayName || resolveDisplayName(sub.username, displayNames),
           totalScore: isAnalyzed ? sub.analysis.aggregatedScore : 0,
           timeScore: isAnalyzed ? (sub.analysis.timeComplexityScore ?? 0) : 0,
           spaceScore: isAnalyzed ? (sub.analysis.spaceComplexityScore ?? 0) : 0,
@@ -102,7 +108,7 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, l
 
         setScores(todayDocs.map(d => ({
           username: d.username,
-          displayName: DISPLAY_NAMES[d.username] ?? d.username,
+          displayName: d.displayName || resolveDisplayName(d.username, displayNames),
           totalScore: d.totalScore ?? 0,
           timeScore: d.timeScore ?? 0,
           spaceScore: d.spaceScore ?? 0,
@@ -116,7 +122,7 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, l
       }
     }
     fetchScores();
-  }, [date, daySubmissions, qotdSlug]);
+  }, [date, daySubmissions, qotdSlug, displayNames]);
 
   return (
     <div
@@ -180,8 +186,15 @@ export default function Leaderboard({ date, daySubmissions, avatars, qotdSlug, l
                           className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-white/10"
                         />
                       ) : (
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-slate-400">
-                          {user.displayName.charAt(0)}
+                        <div
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border flex items-center justify-center font-bold text-sm shadow-sm"
+                          style={{
+                            background: getUserTheme(user.username, userColors?.[user.username]).bg,
+                            borderColor: getUserTheme(user.username, userColors?.[user.username]).border,
+                            color: getUserTheme(user.username, userColors?.[user.username]).stroke,
+                          }}
+                        >
+                          {user.displayName.charAt(0).toUpperCase()}
                         </div>
                       )}
                       {rankIndex < 3 ? (

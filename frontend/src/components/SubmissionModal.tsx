@@ -3,21 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+import { getUserTheme } from '@/lib/userTheme';
+
 interface SubmissionModalProps {
   selectedSub: any;
   setSelectedSub: (sub: any | null) => void;
   submissions: any[];
   avatars: Record<string, string>;
+  userColors?: Record<string, string>;
 }
 
-const USER_THEME_COLORS: Record<string, string> = {
-  nishanttheprogrammer: '99, 102, 241',
-  mohittheprogrammer:   '245, 158, 11',
-  surajsingh542:        '16, 185, 129',
-  harshit_sodhani:      '168, 85, 247',
-};
-
-export default function SubmissionModal({ selectedSub, setSelectedSub, submissions, avatars }: SubmissionModalProps) {
+export default function SubmissionModal({ selectedSub, setSelectedSub, submissions, avatars, userColors }: SubmissionModalProps) {
   if (!selectedSub) return null;
 
   return (
@@ -71,7 +67,8 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
               .filter(s => s.titleSlug === selectedSub.titleSlug)
               .map(sub => {
                 const isSelected = sub.submissionId === selectedSub.submissionId;
-                const rgb = USER_THEME_COLORS[sub.username] || '99, 102, 241';
+                const theme = getUserTheme(sub.username, userColors?.[sub.username]);
+                const rgb = theme.rgb;
                 const score = sub.analysis?.aggregatedScore?.toFixed(1);
                 return (
                   <button

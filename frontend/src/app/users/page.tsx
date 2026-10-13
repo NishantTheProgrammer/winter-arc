@@ -3,36 +3,64 @@
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
-import { ExternalLink, Code2, Trophy } from 'lucide-react';
+import { ExternalLink, Code2, Trophy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import hierarchyData from '@/data/hierarchy.json';
+import CompetitiveGraph from '@/components/CompetitiveGraph';
+import { getUserTheme } from '@/lib/userTheme';
 
 interface User {
   username: string;
   displayName: string;
-  createdAt: string;
+  createdAt?: string;
+  themeColor?: string;
 }
 
-const TOPICS = [
-  "Brute Force", "Two Pointers", "Hashing", "Prefix Suffix", "Searching",
-  "Sorting", "Stack", "Queue", "Linked List", "Recursion", "Backtracking",
-  "Trees", "Heap Priority Queue", "Greedy", "Graphs", "Dynamic Programming",
-  "Divide and Conquer", "Bit Manipulation", "String Algorithms", "Mathematics",
-  "Range Queries", "Advanced Data Structures", "Computational Geometry", "Advanced Techniques"
-];
+interface UserStat {
+  totalSubmissions: number;
+  analyzedCount: number;
+  avgScore: number;
+}
+
+// Canonical 24 topics loaded strictly from hierarchy.json
+const HIERARCHY_TOPICS: string[] = Object.keys(hierarchyData.DSA);
 
 export default function UsersPage() {
-  const [users, setUsers]               = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [coveredTopics, setCoveredTopics] = useState<Record<string, Set<string>>>({});
-  const [loading, setLoading]           = useState(true);
+  const [userStats, setUserStats] = useState<Record<string, UserStat>>({});
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const [userColors, setUserColors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchData() {
       try {
+        // 1. Fetch Users
         const snapshot = await getDocs(collection(db, 'users'));
-        const data = snapshot.docs.map(doc => doc.data() as User);
-        setUsers(data);
+        const usersList = snapshot.docs.map(doc => doc.data() as User);
+        setUsers(usersList);
 
+        const colorMap: Record<string, string> = {};
+        usersList.forEach(u => {
+          if (u.username && u.themeColor) colorMap[u.username] = u.themeColor;
+        });
+
+        // 2. Fetch Avatars and Colors from participants collection
+        const partSnap = await getDocs(collection(db, 'participants'));
+        const avatarMap: Record<string, string> = {};
+        partSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.username) {
+            if (data.avatar) avatarMap[data.username] = data.avatar;
+            if (data.themeColor) colorMap[data.username] = data.themeColor;
+          }
+        });
+        setAvatars(avatarMap);
+        setUserColors(colorMap);
+
+        // 3. Fetch Submissions
         const subSnap = await getDocs(collection(db, 'submissions'));
         const rawSubData = subSnap.docs.map(doc => doc.data());
 
@@ -45,156 +73,224 @@ export default function UsersPage() {
           }
         }
         const subData = Array.from(uniqueSubs.values());
+        setSubmissions(subData);
 
+        // 4. Extract Topic Coverage strictly from hierarchy.json
         const coveredMap: Record<string, Set<string>> = {};
-        data.forEach(u => (coveredMap[u.username] = new Set()));
+        usersList.forEach(u => (coveredMap[u.username] = new Set()));
 
         subData.forEach(sub => {
           if (!sub.username || !sub.analysis?.approachesUsed) return;
-          // Only count submissions that were actually analyzed from code
           if (!sub.analyzed) return;
 
           sub.analysis.approachesUsed.forEach((path: string) => {
-            // The LLM returns path strings like:
-            //   "DSA > Two Pointers > Sliding Window > Fixed Size"
-            //   or just "Two Pointers"
-            // Split on common separators and look for the FIRST segment that
-            // matches a top-level TOPICS entry — that is the real skill used.
+            // Split segments like "Dynamic Programming > Memoization"
             const segments = path
               .split(/\s*[>\/\->|,]\s*|\s+\-\s+/)
               .map(s => s.trim())
               .filter(Boolean);
 
             for (const segment of segments) {
-              if (TOPICS.includes(segment)) {
-                coveredMap[sub.username].add(segment);
-                break; // only record the top-level category, not sub-topics
+              // Ensure topic is strictly recognized in hierarchy.json
+              if (HIERARCHY_TOPICS.includes(segment)) {
+                if (coveredMap[sub.username]) {
+                  coveredMap[sub.username].add(segment);
+                }
+                break; // Top-level hierarchy domain matched
               }
             }
           });
         });
         setCoveredTopics(coveredMap);
+
+        // 5. Compute user aggregate stats
+        const stats: Record<string, UserStat> = {};
+        usersList.forEach(u => {
+          const uSubs = rawSubData.filter(s => s.username === u.username);
+          const analyzed = uSubs.filter(s => s.analyzed && s.analysis && typeof s.analysis.aggregatedScore === 'number');
+          const avg = analyzed.length
+            ? Number((analyzed.reduce((acc, s) => acc + s.analysis.aggregatedScore, 0) / analyzed.length).toFixed(1))
+            : 0;
+
+          stats[u.username] = {
+            totalSubmissions: uSubs.length,
+            analyzedCount: analyzed.length,
+            avgScore: avg,
+          };
+        });
+        setUserStats(stats);
       } catch (err) {
-        console.error('Failed to fetch users:', err);
+        console.error('Failed to fetch users and stats:', err);
       } finally {
         setLoading(false);
       }
     }
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const avatarColors = [
-    'linear-gradient(135deg, #6366f1, #a855f7)',
-    'linear-gradient(135deg, #f59e0b, #ef4444)',
-    'linear-gradient(135deg, #10b981, #06b6d4)',
-  ];
-
   return (
-    <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-full overflow-x-hidden">
+      {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <h1
           className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text"
           style={{ backgroundImage: 'linear-gradient(90deg, #818cf8, #a855f7, #ec4899)' }}
         >
-          Participants
+          Participants &amp; Competitive Analytics
         </h1>
-        <p className="text-slate-500 mt-1 text-sm">Winter Arc challenge members</p>
+        <p className="text-slate-500 mt-1 text-sm">
+          Winter Arc challenge members, DSA topic coverage &amp; performance comparison
+        </p>
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-3 text-slate-500">
+        <div className="flex items-center gap-3 text-slate-500 py-12 justify-center">
           <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          Loading users...
+          Loading participant analytics...
         </div>
       ) : (
-        /* 1 col on mobile, 2 on md, 3 on xl */
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-          {users.map((user, i) => (
-            <motion.div
-              key={user.username}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-2xl p-5 sm:p-6 flex flex-col gap-4"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-              }}
-            >
-              {/* Avatar + Name */}
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shrink-0"
-                  style={{ background: avatarColors[i % avatarColors.length] }}
-                >
-                  {user.displayName[0]}
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-base sm:text-lg font-bold text-white truncate">{user.displayName}</h2>
-                  <p className="text-sm text-slate-500 truncate">@{user.username}</p>
-                </div>
-              </div>
+        <>
+          {/* Competitive Graph Section */}
+          <CompetitiveGraph
+            users={users}
+            submissions={submissions}
+            coveredTopics={coveredTopics}
+            avatars={avatars}
+            userColors={userColors}
+            hierarchyTopics={HIERARCHY_TOPICS}
+          />
 
-              {/* Stats row */}
-              <div className="flex gap-3">
-                <div
-                  className="flex-1 rounded-xl p-3 text-center"
-                  style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
-                >
-                  <Code2 className="w-4 h-4 text-indigo-400 mx-auto mb-1" />
-                  <p className="text-xs text-slate-400">Submissions</p>
-                </div>
-                <div
-                  className="flex-1 rounded-xl p-3 text-center"
-                  style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}
-                >
-                  <Trophy className="w-4 h-4 text-purple-400 mx-auto mb-1" />
-                  <p className="text-xs text-slate-400">AI Score</p>
-                </div>
-              </div>
+          {/* Individual Member Cards Grid */}
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-white mb-1">Challenge Members</h2>
+            <p className="text-xs text-slate-400">Detailed profiles, topic coverage breakdown &amp; LeetCode stats</p>
+          </div>
 
-              {/* Topics Grid */}
-              <div className="border-t border-white/5 pt-4">
-                <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center justify-between">
-                  Topic Coverage
-                  <span className="text-xs text-slate-500 font-normal">
-                    {coveredTopics[user.username]?.size || 0} / {TOPICS.length}
-                  </span>
-                </h3>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {coveredTopics[user.username] && coveredTopics[user.username].size > 0 ? (
-                    Array.from(coveredTopics[user.username]).map(topic => (
-                      <div
-                        key={topic}
-                        className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                      >
-                        <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-                        <span>{topic}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+            {users.map((user, i) => {
+              const stat = userStats[user.username] || { totalSubmissions: 0, analyzedCount: 0, avgScore: 0 };
+              const coveredCount = coveredTopics[user.username]?.size || 0;
+              const theme = getUserTheme(user.username, userColors[user.username] || user.themeColor);
+
+              return (
+                <motion.div
+                  key={user.username}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-4 transition-all duration-200 hover:-translate-y-1"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <div className="flex flex-col gap-4">
+                    {/* Avatar + Name */}
+                    <div className="flex items-center gap-3.5">
+                      {avatars[user.username] ? (
+                        <img
+                          src={avatars[user.username]}
+                          alt={user.displayName}
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border border-white/10 shadow-md shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-xl font-black shrink-0 shadow-md border"
+                          style={{
+                            background: theme.bg,
+                            borderColor: theme.border,
+                            color: theme.stroke,
+                          }}
+                        >
+                          {(user.displayName?.[0] || user.username.charAt(0)).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <h2 className="text-base sm:text-lg font-bold text-white truncate">{user.displayName}</h2>
+                        <p className="text-xs text-slate-400 truncate">@{user.username}</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="w-full text-center py-4 text-xs text-slate-500 italic bg-white/5 rounded-xl border border-white/5">
-                      No topics covered yet
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* LeetCode link */}
-              <a
-                href={`https://leetcode.com/${user.username}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-2.5 sm:py-3 mt-1 sm:mt-2 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-80"
-                style={{ background: 'rgba(255,161,22,0.1)', border: '1px solid rgba(255,161,22,0.2)', color: '#ffa116' }}
-              >
-                <ExternalLink className="w-4 h-4" />
-                View on LeetCode
-              </a>
-            </motion.div>
-          ))}
-        </div>
+                    {/* Stats row with real live values */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div
+                        className="rounded-xl p-2.5 text-center flex flex-col items-center justify-center"
+                        style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
+                      >
+                        <div className="flex items-center gap-1 text-indigo-400 mb-0.5">
+                          <Code2 className="w-3.5 h-3.5" />
+                          <span className="text-[10px] uppercase font-bold tracking-wider">Submissions</span>
+                        </div>
+                        <p className="text-base sm:text-lg font-black text-white">{stat.totalSubmissions}</p>
+                      </div>
+
+                      <div
+                        className="rounded-xl p-2.5 text-center flex flex-col items-center justify-center"
+                        style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}
+                      >
+                        <div className="flex items-center gap-1 text-purple-400 mb-0.5">
+                          <Trophy className="w-3.5 h-3.5" />
+                          <span className="text-[10px] uppercase font-bold tracking-wider">Avg Score</span>
+                        </div>
+                        <p className="text-base sm:text-lg font-black text-white">
+                          {stat.avgScore > 0 ? `${stat.avgScore}` : '—'}
+                          <span className="text-xs font-normal text-slate-400">/10</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Topics Grid strictly from hierarchy.json */}
+                    <div className="border-t border-white/5 pt-3">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                          Topic Coverage
+                        </h3>
+                        <span className="text-xs text-indigo-300 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                          {coveredCount} / {HIERARCHY_TOPICS.length}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                        {coveredTopics[user.username] && coveredTopics[user.username].size > 0 ? (
+                          Array.from(coveredTopics[user.username]).map(topic => (
+                            <div
+                              key={topic}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            >
+                              <Check className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{topic}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="w-full text-center py-4 text-xs text-slate-500 italic bg-white/5 rounded-xl border border-white/5">
+                            No topics covered yet
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* LeetCode link */}
+                  <a
+                    href={`https://leetcode.com/${user.username}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 hover:opacity-85 mt-2"
+                    style={{
+                      background: 'rgba(255,161,22,0.1)',
+                      border: '1px solid rgba(255,161,22,0.2)',
+                      color: '#ffa116',
+                    }}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    View on LeetCode
+                  </a>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

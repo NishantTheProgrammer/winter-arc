@@ -9,10 +9,10 @@ import { db } from '../firebase/config';
 import { getRecentSubmissions, getUserProfile } from '../leetcode/client';
 
 const USERS = [
-  { username: 'nishanttheprogrammer', displayName: 'Nishant' },
-  { username: 'mohittheprogrammer', displayName: 'Mohit' },
-  { username: 'surajsingh542', displayName: 'Suraj' },
-  { username: 'harshit_sodhani', displayName: 'Harshit' },
+  { username: 'nishanttheprogrammer', displayName: 'Nishant', themeColor: '#818cf8' },
+  { username: 'mohittheprogrammer', displayName: 'Mohit', themeColor: '#f59e0b' },
+  { username: 'surajsingh542', displayName: 'Suraj', themeColor: '#10b981' },
+  { username: 'harshit_sodhani', displayName: 'Harshit', themeColor: '#c084fc' },
 ];
 
 const SUBMISSION_LIMIT = 50; // how many past accepted submissions to load per user
@@ -29,6 +29,7 @@ async function seedUsers() {
       {
         username: user.username,
         displayName: user.displayName,
+        themeColor: user.themeColor,
         createdAt: new Date().toISOString(),
       },
       { merge: true }   // don't overwrite fields we don't set here
@@ -42,7 +43,8 @@ async function seedUsers() {
       await partRef.set({
         username: user.username,
         displayName: user.displayName,
-        avatar: avatar
+        avatar: avatar,
+        themeColor: user.themeColor,
       }, { merge: true });
       console.log(`  🖼️  Avatar saved to participants collection`);
     } else {

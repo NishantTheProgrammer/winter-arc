@@ -28,11 +28,13 @@ export default function Dashboard() {
     }
   }, []);
 
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [avatars, setAvatars] = useState<Record<string, string>>({});
-  const [selectedSub, setSelectedSub] = useState<any | null>(null);
-  const [qotdMap, setQotdMap] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
+  const [submissions, setSubmissions]   = useState<any[]>([]);
+  const [avatars, setAvatars]           = useState<Record<string, string>>({});
+  const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
+  const [userColors, setUserColors]     = useState<Record<string, string>>({});
+  const [selectedSub, setSelectedSub]   = useState<any | null>(null);
+  const [qotdMap, setQotdMap]           = useState<Record<string, any>>({});
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     async function fetchData() {
@@ -70,16 +72,33 @@ export default function Dashboard() {
         }
         setSubmissions(Array.from(uniqueSubs.values()));
 
-        // 4. Fetch participants for avatars
+        // 4. Fetch participants and users for avatars, display names, and theme colors
         const partSnap = await getDocs(collection(db, 'participants'));
         const avatarMap: Record<string, string> = {};
+        const nameMap: Record<string, string> = {};
+        const colorMap: Record<string, string> = {};
+
         partSnap.docs.forEach(doc => {
           const data = doc.data();
-          if (data.username && data.avatar) {
-            avatarMap[data.username] = data.avatar;
+          if (data.username) {
+            if (data.avatar) avatarMap[data.username] = data.avatar;
+            if (data.displayName) nameMap[data.username] = data.displayName;
+            if (data.themeColor) colorMap[data.username] = data.themeColor;
           }
         });
+
+        const usersSnap = await getDocs(collection(db, 'users'));
+        usersSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.username) {
+            if (data.displayName && !nameMap[data.username]) nameMap[data.username] = data.displayName;
+            if (data.themeColor && !colorMap[data.username]) colorMap[data.username] = data.themeColor;
+          }
+        });
+
         setAvatars(avatarMap);
+        setDisplayNames(nameMap);
+        setUserColors(colorMap);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
@@ -111,6 +130,8 @@ export default function Dashboard() {
           date={selectedDate} 
           daySubmissions={daySubmissions}
           avatars={avatars}
+          displayNames={displayNames}
+          userColors={userColors}
           qotdSlug={todayQotd?.titleSlug}
           loading={loading}
           onRowClick={(username) => {
@@ -142,6 +163,7 @@ export default function Dashboard() {
           setSelectedSub={setSelectedSub} 
           submissions={submissions} 
           avatars={avatars} 
+          userColors={userColors}
         />
       </AnimatePresence>
     </div>
