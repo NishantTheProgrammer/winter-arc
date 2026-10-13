@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, TrendingUp, Layers, Award, Check, Filter } from 'lucide-react';
+import { Sparkles, TrendingUp, Layers, Award, Check, Filter, Columns, Rows, Table, Info } from 'lucide-react';
 import { getUserTheme, UserTheme } from '@/lib/userTheme';
 
 interface CompetitiveGraphProps {
@@ -28,6 +28,14 @@ export default function CompetitiveGraph({
   const [activeTab, setActiveTab] = useState<'timeline' | 'matrix' | 'head2head'>('timeline');
   const [highlightedUser, setHighlightedUser] = useState<string | null>(null);
   const [matrixFilter, setMatrixFilter] = useState<'all' | 'covered' | 'uncovered'>('all');
+  const [matrixOrientation, setMatrixOrientation] = useState<'topics-rows' | 'participants-rows'>('topics-rows');
+  const [hoveredCell, setHoveredCell] = useState<{
+    username: string;
+    displayName: string;
+    topic: string;
+    count: number;
+    problems: string[];
+  } | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<{
     x: number;
     y: number;
@@ -77,7 +85,136 @@ export default function CompetitiveGraph({
     });
   }, [users, submissions, timelineDates]);
 
-  // 3. User metrics for head-to-head
+  // Detailed Topic Problem counts & solved problem titles strictly matched to hierarchy
+  const topicStats = useMemo(() => {
+    const stats: Record<string, Record<string, { count: number; problems: string[] }>> = {};
+    users.forEach(u => {
+      stats[u.username] = {};
+      hierarchyTopics.forEach(t => {
+        stats[u.username][t] = { count: 0, problems: [] };
+      });
+    });
+
+    submissions.forEach(sub => {
+      if (!sub.username || !sub.analyzed || !sub.analysis?.approachesUsed) return;
+      if (!stats[sub.username]) return;
+
+      const matchedTopics = new Set<string>();
+      sub.analysis.approachesUsed.forEach((path: string) => {
+        const segments = path
+          .split(/\s*[>\/\->|,]\s*|\s+\-\s+/)
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        for (const segment of segments) {
+          if (hierarchyTopics.includes(segment)) {
+            matchedTopics.add(segment);
+            break;
+          }
+        }
+      });
+
+      matchedTopics.forEach(topic => {
+        const item = stats[sub.username]?.[topic];
+        if (item) {
+          item.count += 1;
+          const probTitle = sub.title || sub.titleSlug;
+          if (probTitle && !item.problems.includes(probTitle)) {
+            item.problems.push(probTitle);
+          }
+        }
+      });
+    });
+
+    return stats;
+  }, [users, submissions, hierarchyTopics]);
+
+  // Total unique problems solved per participant in the canonical hierarchy
+  const userTotalHierarchyProblems = useMemo(() => {
+    const totals: Record<string, number> = {};
+    users.forEach(u => {
+      const uniqueProblems = new Set<string>();
+      hierarchyTopics.forEach(t => {
+        const item = topicStats[u.username]?.[t];
+        if (item) {
+          item.problems.forEach(p => uniqueProblems.add(p));
+        }
+      });
+      totals[u.username] = uniqueProblems.size;
+    });
+    return totals;
+  }, [users, hierarchyTopics, topicStats]);
+
+  // Total unique problems solved across team per topic
+  const topicTeamTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    hierarchyTopics.forEach(t => {
+      const topicProblems = new Set<string>();
+      users.forEach(u => {
+        const item = topicStats[u.username]?.[t];
+        if (item) {
+          item.problems.forEach(p => topicProblems.add(p));
+        }
+      });
+      totals[t] = topicProblems.size;
+    });
+    return totals;
+  }, [users, hierarchyTopics, topicStats]);
+
+  // Dynamic GitHub-style commit cell weight style
+  const getCellWeightStyle = (username: string, count: number) => {
+    const colors = getUserColors(username);
+    if (count === 0) {
+      return {
+        bg: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        text: '#475569',
+        tier: 0,
+        boxShadow: 'none',
+        tierLabel: 'Tier 0 • Unexplored',
+      };
+    }
+    if (count <= 2) {
+      return {
+        bg: `rgba(${colors.rgb}, 0.22)`,
+        border: `1px solid rgba(${colors.rgb}, 0.40)`,
+        text: '#e2e8f0',
+        tier: 1,
+        boxShadow: 'none',
+        tierLabel: 'Tier 1 • Introduced',
+      };
+    }
+    if (count <= 5) {
+      return {
+        bg: `rgba(${colors.rgb}, 0.45)`,
+        border: `1px solid rgba(${colors.rgb}, 0.65)`,
+        text: '#ffffff',
+        tier: 2,
+        boxShadow: 'none',
+        tierLabel: 'Tier 2 • Proficient',
+      };
+    }
+    if (count <= 10) {
+      return {
+        bg: `rgba(${colors.rgb}, 0.72)`,
+        border: `1px solid rgba(${colors.rgb}, 0.90)`,
+        text: '#ffffff',
+        tier: 3,
+        boxShadow: `0 0 10px rgba(${colors.rgb}, 0.35)`,
+        tierLabel: 'Tier 3 • Advanced',
+      };
+    }
+    return {
+      bg: colors.stroke,
+      border: '1px solid #ffffff',
+      text: '#ffffff',
+      tier: 4,
+      boxShadow: `0 0 16px rgba(${colors.rgb}, 0.6)`,
+      tierLabel: 'Tier 4 • Mastered',
+    };
+  };
+
+  // 3. User metrics for head-to-head and summary
   const userMetrics = useMemo(() => {
     return users.map(user => {
       const userSubs = submissions.filter(s => s.username === user.username);
@@ -89,6 +226,7 @@ export default function CompetitiveGraph({
       const avgSpace = analyzed.length ? analyzed.reduce((acc, s) => acc + (s.analysis.spaceComplexityScore || 0), 0) / analyzed.length : 0;
       const avgQuality = analyzed.length ? analyzed.reduce((acc, s) => acc + (s.analysis.readabilityScore || 0), 0) / analyzed.length : 0;
       const topicCount = coveredTopics[user.username]?.size || 0;
+      const totalHierarchyProblems = userTotalHierarchyProblems[user.username] || 0;
 
       return {
         username: user.username,
@@ -101,10 +239,11 @@ export default function CompetitiveGraph({
         avgSpace: Number(avgSpace.toFixed(1)),
         avgQuality: Number(avgQuality.toFixed(1)),
         topicCount,
+        totalHierarchyProblems,
         topicPercentage: Math.round((topicCount / (hierarchyTopics.length || 1)) * 100),
       };
     });
-  }, [users, submissions, coveredTopics, hierarchyTopics]);
+  }, [users, submissions, coveredTopics, hierarchyTopics, userTotalHierarchyProblems]);
 
   // Max score for SVG scaling
   const maxCumulativeScore = useMemo(() => {
@@ -486,18 +625,17 @@ export default function CompetitiveGraph({
         </div>
       )}
 
-      {/* TAB 2: TOPIC COVERAGE MATRIX */}
+      {/* TAB 2: TOPIC COVERAGE MATRIX & GITHUB-STYLE HEATMAP */}
       {activeTab === 'matrix' && (
         <div className="flex flex-col gap-4">
-          {/* Header & Filter Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
-              <span className="text-xs text-slate-300 font-semibold">
-                Hierarchy Filter ({filteredTopics.length} / {hierarchyTopics.length} Topics):
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Header & Controls Toolbar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-black/25 p-3 rounded-xl border border-white/5">
+            {/* Filter buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold mr-1">
+                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <span>Filter:</span>
+              </div>
               <button
                 onClick={() => setMatrixFilter('all')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
@@ -526,30 +664,83 @@ export default function CompetitiveGraph({
                     : 'bg-white/5 text-slate-400 hover:text-white'
                 }`}
               >
-                Unmastered / Gap
+                Unmastered Gap
+              </button>
+            </div>
+
+            {/* Axis Orientation Toggle */}
+            <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10 self-start md:self-auto">
+              <span className="text-[10px] uppercase font-bold text-slate-500 px-2 tracking-wider">Axis:</span>
+              <button
+                onClick={() => setMatrixOrientation('topics-rows')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  matrixOrientation === 'topics-rows'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Y-Axis: Topics, X-Axis: Participants"
+              >
+                <Rows className="w-3 h-3" />
+                <span>Topic Rows</span>
+              </button>
+              <button
+                onClick={() => setMatrixOrientation('participants-rows')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  matrixOrientation === 'participants-rows'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Y-Axis: Participants, X-Axis: Topics (GitHub Commit Calendar view)"
+              >
+                <Columns className="w-3 h-3" />
+                <span>Participant Rows</span>
               </button>
             </div>
           </div>
 
-          {/* User Topic Count Progress Bars */}
+          {/* User Topic Count & Solved Problem Volume Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {userMetrics.map(u => {
               const colors = getUserColors(u.username);
               return (
                 <div
                   key={u.username}
-                  className="p-3 rounded-xl flex flex-col gap-1.5"
+                  className="p-3 rounded-xl flex flex-col gap-2 transition-all hover:brightness-110"
                   style={{
                     backgroundColor: colors.bg,
                     border: `1px solid ${colors.border}`,
                   }}
                 >
                   <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-white truncate">{u.displayName}</span>
-                    <span style={{ color: colors.stroke }}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {avatars[u.username] ? (
+                        <img
+                          src={avatars[u.username]}
+                          alt={u.username}
+                          className="w-5 h-5 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white shrink-0"
+                          style={{ backgroundColor: colors.stroke }}
+                        >
+                          {u.displayName[0]}
+                        </div>
+                      )}
+                      <span className="text-white truncate">{u.displayName}</span>
+                    </div>
+                    <span className="font-bold text-xs shrink-0" style={{ color: colors.stroke }}>
                       {u.topicCount} / {hierarchyTopics.length}
                     </span>
                   </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-300">
+                    <span className="text-slate-400">Challenge Solved:</span>
+                    <span className="font-semibold text-white">
+                      {userTotalHierarchyProblems[u.username] || 0} problems
+                    </span>
+                  </div>
+
                   <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
@@ -564,65 +755,356 @@ export default function CompetitiveGraph({
             })}
           </div>
 
-          {/* Matrix Table */}
-          <div className="overflow-x-auto custom-scrollbar rounded-xl border border-white/10 bg-black/20">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/5 text-slate-400">
-                  <th className="py-2.5 px-4 font-semibold">Topic (from hierarchy.json)</th>
-                  {users.map(u => (
-                    <th key={u.username} className="py-2.5 px-4 font-semibold text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {avatars[u.username] && (
+          {/* VIEW 1: TOPIC ROWS (Table View with Weighted Commit Cells) */}
+          {matrixOrientation === 'topics-rows' && (
+            <div className="overflow-x-auto custom-scrollbar rounded-xl border border-white/10 bg-black/25">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5 text-slate-400">
+                    <th className="py-3 px-4 font-semibold min-w-[200px]">Topic (from hierarchy.json)</th>
+                    {users.map(u => (
+                      <th key={u.username} className="py-3 px-3 font-semibold text-center min-w-[90px]">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {avatars[u.username] && (
+                            <img
+                              src={avatars[u.username]}
+                              alt={u.username}
+                              className="w-4 h-4 rounded-full object-cover shrink-0"
+                            />
+                          )}
+                          <span className="truncate">{u.displayName}</span>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="py-3 px-3 font-semibold text-center min-w-[80px]">Team Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredTopics.map((topic, idx) => {
+                    const teamSum = topicTeamTotals[topic] || 0;
+                    return (
+                      <tr
+                        key={topic}
+                        className="hover:bg-white/[0.04] transition-colors"
+                      >
+                        <td className="py-2.5 px-4 font-medium text-slate-200">
+                          <span className="text-slate-500 mr-2 text-[10px]">{idx + 1}.</span>
+                          <span className="hover:text-indigo-400 transition-colors">{topic}</span>
+                        </td>
+                        {users.map(u => {
+                          const stat = topicStats[u.username]?.[topic] || { count: 0, problems: [] };
+                          const style = getCellWeightStyle(u.username, stat.count);
+                          const isHovered =
+                            hoveredCell?.username === u.username && hoveredCell?.topic === topic;
+
+                          return (
+                            <td key={u.username} className="py-2 px-3 text-center">
+                              <button
+                                onMouseEnter={() =>
+                                  setHoveredCell({
+                                    username: u.username,
+                                    displayName: u.displayName,
+                                    topic,
+                                    count: stat.count,
+                                    problems: stat.problems,
+                                  })
+                                }
+                                onClick={() =>
+                                  setHoveredCell({
+                                    username: u.username,
+                                    displayName: u.displayName,
+                                    topic,
+                                    count: stat.count,
+                                    problems: stat.problems,
+                                  })
+                                }
+                                className={`inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-9 rounded-lg text-xs font-bold transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer select-none ${
+                                  isHovered ? 'ring-2 ring-white scale-110 z-10' : ''
+                                }`}
+                                style={{
+                                  backgroundColor: style.bg,
+                                  border: style.border,
+                                  color: style.text,
+                                  boxShadow: style.boxShadow,
+                                }}
+                                title={`${u.displayName}: ${stat.count} problems solved in ${topic}`}
+                              >
+                                {stat.count === 0 ? <span className="opacity-30">—</span> : stat.count}
+                              </button>
+                            </td>
+                          );
+                        })}
+                        <td className="py-2 px-3 text-center">
+                          <span
+                            className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-xs font-semibold ${
+                              teamSum > 0
+                                ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                                : 'text-slate-600 bg-white/[0.02]'
+                            }`}
+                          >
+                            {teamSum > 0 ? `${teamSum} probs` : '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* VIEW 2: PARTICIPANT ROWS (Authentic GitHub Contribution Rows View) */}
+          {matrixOrientation === 'participants-rows' && (
+            <div className="overflow-x-auto custom-scrollbar rounded-xl border border-white/10 bg-black/25 p-4">
+              <div className="min-w-[860px] flex flex-col gap-3">
+                {/* Topic Index Header Row */}
+                <div className="flex items-center gap-2 pb-1 border-b border-white/5 text-[11px] text-slate-400">
+                  <div className="w-48 shrink-0 font-semibold text-slate-300">
+                    Participant &amp; Depth
+                  </div>
+                  <div
+                    className="flex-1 gap-1.5 text-center"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${filteredTopics.length}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    {filteredTopics.map((topic, i) => (
+                      <div
+                        key={topic}
+                        className="text-[10px] text-slate-500 hover:text-white cursor-help font-mono truncate"
+                        title={`${i + 1}. ${topic}`}
+                      >
+                        {i + 1}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="w-16 shrink-0 text-right font-semibold text-slate-300">
+                    Total
+                  </div>
+                </div>
+
+                {/* Participant Rows */}
+                {users.map(u => {
+                  const colors = getUserColors(u.username);
+                  const totalSolved = userTotalHierarchyProblems[u.username] || 0;
+
+                  return (
+                    <div
+                      key={u.username}
+                      className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
+                    >
+                      {/* Left: Participant info */}
+                      <div className="w-48 shrink-0 flex items-center gap-2.5 min-w-0">
+                        {avatars[u.username] ? (
                           <img
                             src={avatars[u.username]}
                             alt={u.username}
-                            className="w-4 h-4 rounded-full object-cover"
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
                           />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
+                            style={{ backgroundColor: colors.stroke }}
+                          >
+                            {u.displayName[0]}
+                          </div>
                         )}
-                        <span>{u.displayName}</span>
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-white truncate">{u.displayName}</p>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {coveredTopics[u.username]?.size || 0}/24 topics
+                          </p>
+                        </div>
                       </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredTopics.map((topic, idx) => (
-                  <tr
-                    key={topic}
-                    className="hover:bg-white/5 transition-colors"
-                  >
-                    <td className="py-2.5 px-4 font-medium text-slate-200">
-                      <span className="text-slate-500 mr-2 text-[10px]">{idx + 1}.</span>
-                      {topic}
-                    </td>
-                    {users.map(u => {
-                      const isCovered = coveredTopics[u.username]?.has(topic);
-                      const colors = getUserColors(u.username);
-                      return (
-                        <td key={u.username} className="py-2.5 px-4 text-center">
-                          {isCovered ? (
-                            <span
-                              className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-xs shadow-sm font-bold"
+
+                      {/* Middle: Weighted Commit Blocks */}
+                      <div
+                        className="flex-1 gap-1.5"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${filteredTopics.length}, minmax(0, 1fr))`,
+                        }}
+                      >
+                        {filteredTopics.map(topic => {
+                          const stat = topicStats[u.username]?.[topic] || { count: 0, problems: [] };
+                          const style = getCellWeightStyle(u.username, stat.count);
+                          const isHovered =
+                            hoveredCell?.username === u.username && hoveredCell?.topic === topic;
+
+                          return (
+                            <button
+                              key={topic}
+                              onMouseEnter={() =>
+                                setHoveredCell({
+                                  username: u.username,
+                                  displayName: u.displayName,
+                                  topic,
+                                  count: stat.count,
+                                  problems: stat.problems,
+                                })
+                              }
+                              onClick={() =>
+                                setHoveredCell({
+                                  username: u.username,
+                                  displayName: u.displayName,
+                                  topic,
+                                  count: stat.count,
+                                  problems: stat.problems,
+                                })
+                              }
+                              className={`aspect-square w-full rounded-[5px] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 cursor-pointer ${
+                                isHovered ? 'ring-2 ring-white scale-125 z-10' : ''
+                              }`}
                               style={{
-                                backgroundColor: colors.bg,
-                                color: colors.stroke,
-                                border: `1px solid ${colors.border}`,
+                                backgroundColor: style.bg,
+                                border: style.border,
+                                color: style.text,
+                                boxShadow: style.boxShadow,
                               }}
-                              title={`${u.displayName} solved code implementing ${topic}`}
+                              title={`${topic}: ${stat.count} problems solved by ${u.displayName}`}
                             >
-                              <Check className="w-3.5 h-3.5" />
-                            </span>
-                          ) : (
-                            <span className="text-slate-700 font-bold select-none">—</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                              {stat.count > 0 ? stat.count : ''}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right: Total Badge */}
+                      <div className="w-16 shrink-0 text-right">
+                        <span
+                          className="px-2 py-0.5 rounded-md text-xs font-black"
+                          style={{
+                            color: colors.stroke,
+                            backgroundColor: colors.bg,
+                            border: `1px solid ${colors.border}`,
+                          }}
+                        >
+                          {totalSolved}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Interactive Inspection Card */}
+          {hoveredCell ? (
+            <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-3">
+                {avatars[hoveredCell.username] ? (
+                  <img
+                    src={avatars[hoveredCell.username]}
+                    alt="avatar"
+                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10"
+                  />
+                ) : (
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0"
+                    style={{ backgroundColor: getUserColors(hoveredCell.username).stroke }}
+                  >
+                    {hoveredCell.displayName[0]}
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-bold text-white">{hoveredCell.displayName}</p>
+                    <span className="text-xs text-slate-500">•</span>
+                    <span
+                      className="text-xs font-bold px-2 py-0.5 rounded"
+                      style={{
+                        color: getUserColors(hoveredCell.username).stroke,
+                        backgroundColor: getUserColors(hoveredCell.username).bg,
+                        border: `1px solid ${getUserColors(hoveredCell.username).border}`,
+                      }}
+                    >
+                      {hoveredCell.topic}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {hoveredCell.count === 0 ? (
+                      <span className="text-slate-500">Unexplored topic • 0 problems submitted yet.</span>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-white">{hoveredCell.count} problem{hoveredCell.count > 1 ? 's' : ''}</span>{' '}
+                        implemented &amp; verified by AI analyzer
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Solved Problems Pills */}
+              {hoveredCell.problems.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap max-w-md sm:justify-end">
+                  {hoveredCell.problems.slice(0, 4).map(p => (
+                    <span
+                      key={p}
+                      className="text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-200 truncate max-w-[150px]"
+                      title={p}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                  {hoveredCell.problems.length > 4 && (
+                    <span className="text-[10px] text-slate-400 font-bold bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                      +{hoveredCell.problems.length - 4} more
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-black/20 border border-white/5 text-xs text-slate-500 flex items-center justify-center gap-2">
+              <Info className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Hover or click on any weighted block to inspect specific problems solved by participant</span>
+            </div>
+          )}
+
+          {/* GitHub-Style Weighted Legend */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-400 pt-1 pb-1 gap-2 border-t border-white/5">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 text-[11px] font-semibold">Commit Weight:</span>
+              <span className="text-[11px] text-slate-500">Less</span>
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-4 h-4 rounded bg-white/[0.03] border border-white/10 flex items-center justify-center text-[9px] text-slate-600 font-bold"
+                  title="0 problems"
+                >
+                  —
+                </div>
+                <div
+                  className="w-4 h-4 rounded bg-indigo-500/25 border border-indigo-500/40 flex items-center justify-center text-[9px] text-indigo-200 font-bold"
+                  title="1-2 problems (Tier 1)"
+                >
+                  1
+                </div>
+                <div
+                  className="w-4 h-4 rounded bg-indigo-500/50 border border-indigo-500/65 flex items-center justify-center text-[9px] text-white font-bold"
+                  title="3-5 problems (Tier 2)"
+                >
+                  3
+                </div>
+                <div
+                  className="w-4 h-4 rounded bg-indigo-500/75 border border-indigo-500/90 shadow-[0_0_8px_rgba(99,102,241,0.35)] flex items-center justify-center text-[9px] text-white font-bold"
+                  title="6-10 problems (Tier 3)"
+                >
+                  7
+                </div>
+                <div
+                  className="w-4 h-4 rounded bg-indigo-500 border border-white shadow-[0_0_12px_rgba(99,102,241,0.6)] flex items-center justify-center text-[9px] text-white font-bold"
+                  title="11+ problems (Tier 4)"
+                >
+                  12
+                </div>
+              </div>
+              <span className="text-[11px] text-slate-500">More</span>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              Color weight scales dynamically with unique LeetCode problems solved per hierarchy topic
+            </div>
           </div>
         </div>
       )}

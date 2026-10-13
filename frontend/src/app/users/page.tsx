@@ -60,13 +60,39 @@ export default function UsersPage() {
         setAvatars(avatarMap);
         setUserColors(colorMap);
 
-        // 3. Fetch Submissions
+        // 3. Fetch QOTD collection for the Winter Arc challenge
+        const qotdSnap = await getDocs(collection(db, 'qotd'));
+        const qotdSlugs = new Set<string>();
+        const slugToQotdDate: Record<string, string> = {};
+        qotdSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.titleSlug) {
+            qotdSlugs.add(data.titleSlug);
+            slugToQotdDate[data.titleSlug] = doc.id;
+          }
+        });
+
+        // 4. Fetch Submissions and filter strictly for Winter Arc challenge
         const subSnap = await getDocs(collection(db, 'submissions'));
-        const rawSubData = subSnap.docs.map(doc => doc.data());
+        const rawSubData: any[] = subSnap.docs.map(doc => {
+          const data = doc.data() as any;
+          if (slugToQotdDate[data.titleSlug]) {
+            return { ...data, date: slugToQotdDate[data.titleSlug], isChallenge: true };
+          }
+          return { ...data, isChallenge: qotdSlugs.has(data.titleSlug) };
+        });
+
+        // Strictly filter to Winter Arc challenge problems
+        const winterArcData = rawSubData.filter((sub: any) => {
+          if (qotdSlugs.size > 0) {
+            return qotdSlugs.has(sub.titleSlug);
+          }
+          return sub.date >= '2026-10-01' && sub.date <= '2026-12-31';
+        });
 
         // Deduplicate: keep only the latest submission per user per question
         const uniqueSubs = new Map();
-        for (const sub of rawSubData) {
+        for (const sub of winterArcData) {
           const key = `${sub.username}_${sub.titleSlug}`;
           if (!uniqueSubs.has(key) || sub.timestamp > uniqueSubs.get(key).timestamp) {
             uniqueSubs.set(key, sub);
@@ -75,7 +101,7 @@ export default function UsersPage() {
         const subData = Array.from(uniqueSubs.values());
         setSubmissions(subData);
 
-        // 4. Extract Topic Coverage strictly from hierarchy.json
+        // 5. Extract Topic Coverage strictly from hierarchy.json
         const coveredMap: Record<string, Set<string>> = {};
         usersList.forEach(u => (coveredMap[u.username] = new Set()));
 
@@ -103,10 +129,10 @@ export default function UsersPage() {
         });
         setCoveredTopics(coveredMap);
 
-        // 5. Compute user aggregate stats
+        // 6. Compute user aggregate stats strictly for Winter Arc challenge
         const stats: Record<string, UserStat> = {};
         usersList.forEach(u => {
-          const uSubs = rawSubData.filter(s => s.username === u.username);
+          const uSubs = subData.filter(s => s.username === u.username);
           const analyzed = uSubs.filter(s => s.analyzed && s.analysis && typeof s.analysis.aggregatedScore === 'number');
           const avg = analyzed.length
             ? Number((analyzed.reduce((acc, s) => acc + s.analysis.aggregatedScore, 0) / analyzed.length).toFixed(1))
@@ -220,7 +246,7 @@ export default function UsersPage() {
                       >
                         <div className="flex items-center gap-1 text-indigo-400 mb-0.5">
                           <Code2 className="w-3.5 h-3.5" />
-                          <span className="text-[10px] uppercase font-bold tracking-wider">Submissions</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider">Challenge Solved</span>
                         </div>
                         <p className="text-base sm:text-lg font-black text-white">{stat.totalSubmissions}</p>
                       </div>
