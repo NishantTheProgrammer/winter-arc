@@ -177,23 +177,13 @@ export default function UsersPage() {
         </div>
       ) : (
         <>
-          {/* Competitive Graph Section */}
-          <CompetitiveGraph
-            users={users}
-            submissions={submissions}
-            coveredTopics={coveredTopics}
-            avatars={avatars}
-            userColors={userColors}
-            hierarchyTopics={HIERARCHY_TOPICS}
-          />
-
           {/* Individual Member Cards Grid */}
           <div className="mb-4">
             <h2 className="text-lg font-bold text-white mb-1">Challenge Members</h2>
             <p className="text-xs text-slate-400">Detailed profiles, topic coverage breakdown &amp; LeetCode stats</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10">
             {users.map((user, i) => {
               const stat = userStats[user.username] || { totalSubmissions: 0, analyzedCount: 0, avgScore: 0 };
               const coveredCount = coveredTopics[user.username]?.size || 0;
@@ -317,6 +307,16 @@ export default function UsersPage() {
               );
             })}
           </div>
+
+          {/* Competitive Graph Section */}
+          <CompetitiveGraph
+            users={users}
+            submissions={submissions}
+            coveredTopics={coveredTopics}
+            avatars={avatars}
+            userColors={userColors}
+            hierarchyTopics={HIERARCHY_TOPICS}
+          />
         </>
       )}
     </div>
