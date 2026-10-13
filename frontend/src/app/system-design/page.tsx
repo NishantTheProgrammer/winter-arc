@@ -60,12 +60,16 @@ export default function SystemDesignPage() {
         if (allRecords.length > 0) {
           setRecords(allRecords);
           const currentISTDate = getISTTime().dateStr;
-          // Select today if present, else latest
-          const todayRecord = allRecords.find(r => r.date === currentISTDate);
-          if (todayRecord) {
-            setSelectedDate(todayRecord.date);
+          const queryDate = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('date') : null;
+          if (queryDate && allRecords.some(r => r.date === queryDate)) {
+            setSelectedDate(queryDate);
           } else {
-            setSelectedDate(allRecords[allRecords.length - 1].date);
+            const todayRecord = allRecords.find(r => r.date === currentISTDate);
+            if (todayRecord) {
+              setSelectedDate(todayRecord.date);
+            } else {
+              setSelectedDate(allRecords[allRecords.length - 1].date);
+            }
           }
         } else {
           // If none found, fetch/pick today
@@ -118,6 +122,8 @@ export default function SystemDesignPage() {
     });
   });
 
+  const currentActiveDiff = [0, 1, 2, 3, 4, 5].find(d => (diffCounts[d] || 0) < totalCatalogPerDiff[d]) ?? 0;
+
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full min-w-0 space-y-8">
       {/* ── Top Header ──────────────────────────────────────────────────────── */}
@@ -125,7 +131,7 @@ export default function SystemDesignPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 mb-3">
             <Layers className="w-3.5 h-3.5" />
-            <span>90-Day System Design Arc • Daily Challenge</span>
+            <span>3-Month System Design Arc (Oct – Dec) • Daily Challenge</span>
           </div>
           <h1
             className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text tracking-tight"
@@ -134,7 +140,7 @@ export default function SystemDesignPage() {
             System Design Arc
           </h1>
           <p className="text-slate-400 mt-2 text-sm sm:text-base max-w-2xl leading-relaxed">
-            One randomized architectural design problem per day, ascending strictly from foundational (Level 0) to senior distributed scale (Level 5).
+            One randomized architectural design problem per day across 3 months (October, November, December), ascending strictly from foundational (Level 0) to senior distributed scale (Level 5).
           </p>
         </div>
 
@@ -247,6 +253,69 @@ export default function SystemDesignPage() {
         </div>
       ) : (
         <div className="space-y-8">
+          {/* ── Difficulty Progression Ladder ───────────────────────────────── */}
+          <div className="glass rounded-3xl p-6 sm:p-8 border border-white/10 space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Compass className="w-5 h-5 text-indigo-400" />
+                <span>Difficulty Progression Ladder</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Problems are picked randomly within the lowest unlocked difficulty until exhausted, then level increases.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[0, 1, 2, 3, 4, 5].map(diff => {
+                const conf = DIFFICULTY_CONFIG[diff];
+                const count = diffCounts[diff] || 0;
+                const total = totalCatalogPerDiff[diff] || 0;
+                const percentage = total > 0 ? (count / total) * 100 : 0;
+                const isCurrent = diff === currentActiveDiff;
+                return (
+                  <div
+                    key={diff}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      isCurrent
+                        ? 'bg-white/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
+                        : 'bg-white/[0.03] border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: conf.color }}
+                        />
+                        <span className="font-bold text-sm text-white">Level {diff}: {conf.label}</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-slate-300">
+                        {count} / {total}
+                      </span>
+                    </div>
+
+                    <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: conf.color,
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 mt-2">
+                      <span>{percentage.toFixed(0)}% completed</span>
+                      {isCurrent && (
+                        <span className="text-emerald-400 font-semibold">● Active Tier</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* ── Date Navigator Tabs ────────────────────────────────────────── */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
             {records.map(rec => {
@@ -321,9 +390,22 @@ export default function SystemDesignPage() {
                           style={{ backgroundColor: diffStyle.color }}
                         />
                         <span>Problem {idx + 1}: {prob.title}</span>
+                        {prob.isBackfill && prob.backfillForDate && (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 text-[10px] font-bold border border-purple-500/40">
+                            Backfills {prob.backfillForDate}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Sunday Backfill Banner */}
+              {activeProblem.isBackfill && activeProblem.backfillForDate && (
+                <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/25 flex items-center gap-2.5 text-xs text-purple-200 font-semibold">
+                  <Zap className="w-4 h-4 text-purple-400 fill-purple-400" />
+                  <span>Sunday Catch-Up • Backfilled for {activeProblem.backfillForDate} (Winter Arc Day {activeProblem.backfillDayNumber})</span>
                 </div>
               )}
 
@@ -532,69 +614,6 @@ export default function SystemDesignPage() {
               </div>
             </div>
           )}
-
-          {/* ── 90-Day Progression Roadmap ───────────────────────────────── */}
-          <div className="glass rounded-3xl p-6 sm:p-8 border border-white/10 space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Compass className="w-5 h-5 text-indigo-400" />
-                <span>90-Day Difficulty Progression Ladder</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Problems are picked randomly within the lowest unlocked difficulty until exhausted, then level increases.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[0, 1, 2, 3, 4, 5].map(diff => {
-                const conf = DIFFICULTY_CONFIG[diff];
-                const count = diffCounts[diff] || 0;
-                const total = totalCatalogPerDiff[diff] || 0;
-                const percentage = total > 0 ? (count / total) * 100 : 0;
-                const isCurrent = diff === 0; // Currently diff 0 is in progress
-                return (
-                  <div
-                    key={diff}
-                    className={`p-4 rounded-2xl border transition-all ${
-                      isCurrent
-                        ? 'bg-white/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
-                        : 'bg-white/[0.03] border-white/10'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: conf.color }}
-                        />
-                        <span className="font-bold text-sm text-white">Level {diff}: {conf.label}</span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-slate-300">
-                        {count} / {total}
-                      </span>
-                    </div>
-
-                    <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${percentage}%`,
-                          backgroundColor: conf.color,
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 mt-2">
-                      <span>{percentage.toFixed(0)}% completed</span>
-                      {isCurrent && (
-                        <span className="text-emerald-400 font-semibold">● Active Tier</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 # ❄️ Winter Arc - LeetCode Tracker
 
-Winter Arc is a beautiful, AI-powered leaderboard and tracking dashboard for a 90-day LeetCode challenge (Oct 1 - Dec 31). It tracks daily submissions, scores code quality using a custom AI pipeline (LangGraph + Ollama), and visualizes progress in a highly competitive, aesthetic dashboard.
+Winter Arc is a beautiful, AI-powered leaderboard and tracking dashboard for a 3-month challenge across October, November, and December (Oct 1 - Dec 31). It tracks daily submissions, scores code quality using a custom AI pipeline (LangGraph + Ollama), and visualizes progress in a highly competitive, aesthetic dashboard.
 
 ## 🌟 Features
 

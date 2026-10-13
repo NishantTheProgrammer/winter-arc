@@ -18,7 +18,29 @@ export interface SystemDesignProblem {
   tags: string[];
   resources: SystemDesignResource[];
   resource_note?: string;
+  isBackfill?: boolean;
+  backfillForDate?: string;
+  backfillDayNumber?: number;
 }
+
+export const ARC_START_DATE = '2026-10-01';
+export const FEATURE_KICKOFF_DATE = '2026-10-13';
+
+// Dates missed before the System Design feature started (will be caught up on Sundays only)
+export const MISSED_DATES = [
+  '2026-10-01',
+  '2026-10-02',
+  '2026-10-03',
+  '2026-10-04',
+  '2026-10-05',
+  '2026-10-06',
+  '2026-10-07',
+  '2026-10-08',
+  '2026-10-09',
+  '2026-10-10',
+  '2026-10-11',
+  '2026-10-12',
+];
 
 export interface SystemDesignCatalog {
   name: string;
@@ -224,7 +246,27 @@ export async function pickProblemsForDate(targetDate: string): Promise<DailySyst
 
     // Pick random problem from available candidates
     const randomIndex = Math.floor(Math.random() * candidates.length);
-    const picked = candidates[randomIndex];
+    const picked: SystemDesignProblem = { ...candidates[randomIndex] };
+
+    // If it is a Sunday and this is the second question (q === 1):
+    // This is the additional catch-up problem! Mark which missed date it backfills.
+    if (isSunday && q === 1) {
+      const alreadyBackfilled = new Set<string>();
+      for (const r of allRecords) {
+        for (const p of r.problems) {
+          if (p.isBackfill && p.backfillForDate) {
+            alreadyBackfilled.add(p.backfillForDate);
+          }
+        }
+      }
+      const nextDateToBackfill = MISSED_DATES.find(d => !alreadyBackfilled.has(d));
+      if (nextDateToBackfill) {
+        picked.isBackfill = true;
+        picked.backfillForDate = nextDateToBackfill;
+        const dayNumber = parseInt(nextDateToBackfill.split('-')[2], 10);
+        picked.backfillDayNumber = dayNumber;
+      }
+    }
 
     assignedIds.add(picked.id);
     chosenProblems.push(picked);

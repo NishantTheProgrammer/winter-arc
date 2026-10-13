@@ -2,13 +2,16 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Layers, ArrowRight, Lock, Unlock, Zap } from 'lucide-react';
+import { Layers, ArrowRight, Lock, Unlock, Zap, Clock } from 'lucide-react';
 import {
   DailySystemDesignRecord,
   DIFFICULTY_CONFIG,
   isResourcesUnlocked,
   fetchTodaySystemDesign,
   getISTTime,
+  findBackfillForDate,
+  MISSED_DATES,
+  FEATURE_KICKOFF_DATE,
 } from '@/lib/systemDesign';
 
 import { useState, useEffect } from 'react';
@@ -44,6 +47,7 @@ export default function Dashboard() {
   const [selectedSub, setSelectedSub]       = useState<any | null>(null);
   const [qotdMap, setQotdMap]               = useState<Record<string, any>>({});
   const [systemDesignMap, setSystemDesignMap] = useState<Record<string, DailySystemDesignRecord>>({});
+  const [dashboardSdIndex, setDashboardSdIndex] = useState<number>(0);
   const [loading, setLoading]               = useState(true);
 
   useEffect(() => {
@@ -144,12 +148,17 @@ export default function Dashboard() {
   const problemStatement = firstSubWithContext?.questionContext;
   const problemTitle = todayQotd?.title || firstSubWithContext?.title;
 
+  const handleSelectDate = (date: string) => {
+    setSelectedDate(date);
+    setDashboardSdIndex(0);
+  };
+
   if (!mounted) return null; // Avoid rendering until client-side hydration completes
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-start w-full min-w-0">
       <div className="w-full xl:w-[420px] xl:shrink-0 flex flex-col gap-6 items-center">
-        <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <Calendar selectedDate={selectedDate} onSelectDate={handleSelectDate} />
         <UserProgress submissions={submissions} avatars={avatars} qotdMap={qotdMap} />
       </div>
       <div className="flex-1 min-w-0 w-full flex flex-col gap-8">
@@ -173,13 +182,130 @@ export default function Dashboard() {
           }}
         />
 
-        {/* System Design Challenge of the Day */}
+        {/* System Design Challenge for the selected date */}
         {(() => {
           const istToday = getISTTime().dateStr;
-          const sdRecord = systemDesignMap[selectedDate] || systemDesignMap[istToday];
+          const sdRecord = systemDesignMap[selectedDate];
+          const isSelectedToday = selectedDate === istToday;
+          const isFuture = selectedDate > istToday;
+
+          // 1. Future Dates
+          if (isFuture) {
+            return (
+              <div className="w-full min-w-0 glass border border-white/10 rounded-2xl p-5 sm:p-6 text-white relative overflow-hidden">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>System Design Challenge</span>
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-xs font-mono">
+                    {selectedDate}
+                  </span>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex items-center gap-3 text-slate-300 text-sm">
+                  <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <h5 className="font-bold text-white text-sm">Upcoming System Design Problem</h5>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      The challenge for {selectedDate} will be assigned on this date as per the Winter Arc schedule.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // 2. Missed dates before feature kickoff
+          const backfillStatus = findBackfillForDate(selectedDate, Object.values(systemDesignMap));
+          if (backfillStatus.isMissedDate && !sdRecord) {
+            if (backfillStatus.isBackfilled && backfillStatus.problem && backfillStatus.assignedOnSunday) {
+              const bp = backfillStatus.problem;
+              const bDiff = DIFFICULTY_CONFIG[bp.difficulty] || DIFFICULTY_CONFIG[0];
+              return (
+                <div className="w-full min-w-0 glass border border-purple-500/30 rounded-2xl p-5 sm:p-6 text-white relative overflow-hidden group">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold">
+                        <Zap className="w-3.5 h-3.5 fill-purple-400" />
+                        <span>Sunday Backfill for {selectedDate}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
+                        Assigned on Sunday, {backfillStatus.assignedOnSunday}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 ${bDiff.bgClass} ${bDiff.borderClass} ${bDiff.textClass}`}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: bDiff.color }} />
+                        Diff {bp.difficulty}: {bDiff.label}
+                      </span>
+                    </div>
+
+                    <div className="px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 border bg-emerald-500/10 border-emerald-500/20 text-emerald-300">
+                      <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Unlocked</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 mb-4">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                      <span>Problem #{bp.id}</span>
+                      <span>•</span>
+                      <span>Assigned to catch up {selectedDate}</span>
+                    </div>
+                    <h4 className="text-lg sm:text-xl font-black text-white group-hover:text-purple-300 transition-colors">
+                      {bp.title}
+                    </h4>
+                    <p className="text-slate-300 text-sm line-clamp-2 leading-relaxed">
+                      {bp.problem_statement}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-white/5">
+                    <div className="text-xs text-slate-400">
+                      <span>Backfilled on Sunday ({backfillStatus.assignedOnSunday}) to catch up missed dates</span>
+                    </div>
+
+                    <Link
+                      href={`/system-design?date=${backfillStatus.assignedOnSunday}`}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 hover:text-white text-xs font-semibold border border-purple-500/30 hover:border-purple-500/50 transition-all shadow"
+                    >
+                      <span>View on Sunday Arc</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            } else {
+              const dayNum = parseInt(selectedDate.split('-')[2], 10);
+              return (
+                <div className="w-full min-w-0 glass border border-amber-500/20 rounded-2xl p-5 sm:p-6 text-white relative overflow-hidden">
+                  <div className="flex items-center gap-2.5 mb-3 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/25 text-amber-300 text-xs font-semibold">
+                      <Zap className="w-3.5 h-3.5 fill-amber-400" />
+                      <span>Scheduled for Sunday Catch-Up</span>
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-xs font-mono">
+                      {selectedDate} (Day {dayNum})
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex items-start gap-3.5 text-slate-300 text-sm">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-white text-sm">Catch-Up Scheduled on Upcoming Sunday</h5>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        This date preceded the System Design Arc kickoff. Each upcoming Sunday features 2 problems (1 regular + 1 catch-up) to backfill missed days in sequence!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          }
+
           if (!sdRecord || !sdRecord.problems || sdRecord.problems.length === 0) return null;
 
-          const sdProblem = sdRecord.problems[0];
+          const currentIdx = Math.min(dashboardSdIndex, sdRecord.problems.length - 1);
+          const sdProblem = sdRecord.problems[currentIdx] || sdRecord.problems[0];
           const sdUnlocked = isResourcesUnlocked(sdRecord.date);
           const sdDiff = DIFFICULTY_CONFIG[sdProblem.difficulty] || DIFFICULTY_CONFIG[0];
 
@@ -191,12 +317,12 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold">
                     <Layers className="w-3.5 h-3.5" />
-                    <span>System Design Challenge of the Day</span>
+                    <span>System Design Challenge • {isSelectedToday ? "Today's Challenge" : selectedDate}</span>
                   </span>
                   {sdRecord.isSunday && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
                       <Zap className="w-3 h-3 fill-amber-400" />
-                      Sunday 2x
+                      Sunday 2x Selection
                     </span>
                   )}
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 ${sdDiff.bgClass} ${sdDiff.borderClass} ${sdDiff.textClass}`}>
@@ -224,11 +350,58 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Sunday 2-problem switcher tabs */}
+              {sdRecord.problems.length > 1 && (
+                <div className="flex items-center gap-2 pb-3 mb-3 border-b border-white/10 flex-wrap">
+                  <span className="text-xs font-semibold text-amber-300 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 fill-amber-400" />
+                    Sunday 2x Selection:
+                  </span>
+                  {sdRecord.problems.map((p, idx) => {
+                    const isTabActive = currentIdx === idx;
+                    const tabDiff = DIFFICULTY_CONFIG[p.difficulty] || DIFFICULTY_CONFIG[0];
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setDashboardSdIndex(idx)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border ${
+                          isTabActive
+                            ? 'bg-white/15 border-white/30 text-white shadow'
+                            : 'bg-white/5 border-white/5 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tabDiff.color }} />
+                        <span>Problem {idx + 1}: {p.title}</span>
+                        {p.isBackfill && p.backfillForDate && (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 text-[10px] font-bold border border-purple-500/40">
+                            Backfills {p.backfillForDate}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* If Sunday additional problem: clearly show for which date it is backfilled */}
+              {sdProblem.isBackfill && sdProblem.backfillForDate && (
+                <div className="px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold inline-flex items-center gap-2 mb-3">
+                  <Zap className="w-3.5 h-3.5 text-purple-400 fill-purple-400" />
+                  <span>Sunday Catch-Up • Backfilled for {sdProblem.backfillForDate} (Day {sdProblem.backfillDayNumber})</span>
+                </div>
+              )}
+
               <div className="space-y-1.5 mb-4">
                 <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
                   <span>Problem #{sdProblem.id}</span>
                   <span>•</span>
                   <span>{sdRecord.date} ({sdRecord.dayName})</span>
+                  {sdRecord.problems.length > 1 && (
+                    <span className="text-amber-400 font-sans font-semibold">
+                      (Problem {currentIdx + 1} of {sdRecord.problems.length})
+                    </span>
+                  )}
                 </div>
                 <h4 className="text-lg sm:text-xl font-black text-white group-hover:text-indigo-300 transition-colors">
                   {sdProblem.title}
@@ -241,14 +414,14 @@ export default function Dashboard() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-white/5">
                 <div className="text-xs text-slate-400">
                   {sdRecord.problems.length > 1 ? (
-                    <span className="text-amber-300 font-medium">Sunday Arc: {sdRecord.problems.length} problems assigned today</span>
+                    <span className="text-amber-300 font-medium">Sunday Arc: {sdRecord.problems.length} problems assigned on this date</span>
                   ) : (
                     <span>{sdUnlocked ? 'Full solution walkthroughs and articles available' : 'Spend the day designing components before 6 PM IST'}</span>
                   )}
                 </div>
 
                 <Link
-                  href="/system-design"
+                  href={`/system-design?date=${selectedDate}`}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 text-indigo-200 hover:text-white text-xs font-semibold border border-indigo-500/30 hover:border-indigo-500/50 transition-all shadow"
                 >
                   <span>Explore Architecture Canvas</span>

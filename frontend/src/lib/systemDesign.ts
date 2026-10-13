@@ -17,7 +17,27 @@ export interface SystemDesignProblem {
   tags: string[];
   resources: SystemDesignResource[];
   resource_note?: string;
+  isBackfill?: boolean;
+  backfillForDate?: string;
+  backfillDayNumber?: number;
 }
+
+export const FEATURE_KICKOFF_DATE = '2026-10-13';
+
+export const MISSED_DATES = [
+  '2026-10-01',
+  '2026-10-02',
+  '2026-10-03',
+  '2026-10-04',
+  '2026-10-05',
+  '2026-10-06',
+  '2026-10-07',
+  '2026-10-08',
+  '2026-10-09',
+  '2026-10-10',
+  '2026-10-11',
+  '2026-10-12',
+];
 
 export interface DailySystemDesignRecord {
   date: string;
@@ -226,4 +246,33 @@ export async function fetchAllAssignedSystemDesign(): Promise<DailySystemDesignR
   }
 
   return [];
+}
+
+/**
+ * Checks if a date was a missed date from before kickoff and if it was backfilled on an upcoming Sunday.
+ */
+export function findBackfillForDate(dateStr: string, records: DailySystemDesignRecord[]): {
+  isBackfilled: boolean;
+  isMissedDate: boolean;
+  assignedOnSunday?: string;
+  problem?: SystemDesignProblem;
+} {
+  const isMissedDate = MISSED_DATES.includes(dateStr);
+  for (const rec of records) {
+    if (!rec.problems) continue;
+    for (const p of rec.problems) {
+      if (p.isBackfill && p.backfillForDate === dateStr) {
+        return {
+          isBackfilled: true,
+          isMissedDate: true,
+          assignedOnSunday: rec.date,
+          problem: p,
+        };
+      }
+    }
+  }
+  return {
+    isBackfilled: false,
+    isMissedDate,
+  };
 }
