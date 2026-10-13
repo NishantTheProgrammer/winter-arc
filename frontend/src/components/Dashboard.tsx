@@ -101,12 +101,12 @@ export default function Dashboard() {
   if (!mounted) return null; // Avoid rendering until client-side hydration completes
 
   return (
-    <div className="flex flex-col xl:flex-row gap-8 items-start w-full">
-      <div className="w-full xl:w-[420px] flex flex-col gap-6 items-center">
+    <div className="flex flex-col xl:flex-row gap-8 items-start w-full min-w-0">
+      <div className="w-full xl:w-[420px] xl:shrink-0 flex flex-col gap-6 items-center">
         <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <UserProgress submissions={submissions} avatars={avatars} qotdMap={qotdMap} />
       </div>
-      <div className="flex-1 w-full flex flex-col gap-8">
+      <div className="flex-1 min-w-0 w-full flex flex-col gap-8">
         <Leaderboard 
           date={selectedDate} 
           daySubmissions={daySubmissions}
@@ -126,10 +126,10 @@ export default function Dashboard() {
         />
 
         {problemStatement && problemStatement !== "No description available" && (
-          <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white text-sm">
-            <h3 className="font-bold text-xl mb-4 text-indigo-400">{problemTitle || 'Problem of the Day'}</h3>
+          <div className="w-full min-w-0 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 text-white text-sm overflow-hidden">
+            <h3 className="font-bold text-lg sm:text-xl mb-4 text-indigo-400 break-words">{problemTitle || 'Problem of the Day'}</h3>
             <div 
-              className="leetcode-content max-h-[400px] overflow-y-auto text-slate-300 pr-2 custom-scrollbar"
+              className="leetcode-content max-h-[400px] overflow-y-auto overflow-x-auto text-slate-300 pr-2 custom-scrollbar max-w-full"
               dangerouslySetInnerHTML={{ __html: problemStatement }}
             />
           </div>

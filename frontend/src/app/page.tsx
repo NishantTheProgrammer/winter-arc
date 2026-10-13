@@ -2,7 +2,7 @@ import Dashboard from '@/components/Dashboard';
 
 export default function DashboardPage() {
   return (
-    <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-full min-w-0">
       <div className="mb-6 sm:mb-8">
         <h1
           className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text"

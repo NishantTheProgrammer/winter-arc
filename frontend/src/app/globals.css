@@ -76,6 +76,9 @@ body {
 /* Custom styling for LeetCode raw HTML injection */
 .leetcode-content {
   line-height: 1.6;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .leetcode-content p {
@@ -87,6 +90,10 @@ body {
   padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   margin: 1rem 0;
   border: 1px solid rgba(255, 255, 255, 0.05);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -101,12 +108,41 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.85em;
   color: #c7d2fe; /* indigo-200 */
+  word-break: break-word;
 }
 
 .leetcode-content pre code {
   background-color: transparent;
   padding: 0;
   color: inherit;
+  white-space: inherit;
+  word-break: inherit;
+}
+
+.leetcode-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.leetcode-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.leetcode-content .example-block {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  max-width: 100%;
+  overflow-x: auto;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .leetcode-content strong, .leetcode-content b {

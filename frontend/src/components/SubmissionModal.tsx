@@ -110,7 +110,7 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
                 <span className="text-slate-500 transition-transform group-open:-rotate-180">▼</span>
               </summary>
               <div
-                className="p-4 text-sm text-slate-300 border-t border-white/10 bg-[#1e1e1e]/50 max-h-[240px] sm:max-h-[300px] overflow-y-auto leetcode-content"
+                className="p-4 text-sm text-slate-300 border-t border-white/10 bg-[#1e1e1e]/50 max-h-[240px] sm:max-h-[300px] overflow-y-auto overflow-x-auto leetcode-content max-w-full"
                 dangerouslySetInnerHTML={{ __html: selectedSub.questionContext }}
               />
             </details>

@@ -17,7 +17,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="min-h-full bg-slate-950 text-slate-100 antialiased">
+      <body className="min-h-full bg-slate-950 text-slate-100 antialiased overflow-x-hidden">
         <ThemeProvider>
           <Sidebar />
           {/*
@@ -25,7 +25,7 @@ export default function RootLayout({
             - Mobile (< lg):  full width + pt-14 top padding for the fixed mobile header bar
             - Desktop (≥ lg): ml-64 to clear the fixed 256px sidebar
           */}
-          <main className="min-h-screen pt-14 lg:pt-0 lg:ml-64">
+          <main className="min-h-screen pt-14 lg:pt-0 lg:ml-64 max-w-full overflow-x-hidden">
             {children}
           </main>
         </ThemeProvider>
