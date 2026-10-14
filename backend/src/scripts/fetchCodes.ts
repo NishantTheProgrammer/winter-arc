@@ -1,14 +1,6 @@
-import { db } from '../firebase/config';
+import path from 'path';
 import axios from 'axios';
-import { getQuestionData } from '../leetcode/client';
-
-const LEETCODE_SESSION = process.env.LEETCODE_SESSION;
-const CSRF_TOKEN = process.env.LEETCODE_CSRF_TOKEN;
-
-if (!LEETCODE_SESSION || !CSRF_TOKEN) {
-  console.error("❌ Missing LEETCODE_SESSION or LEETCODE_CSRF_TOKEN in backend/.env");
-  process.exit(1);
-}
+import { db } from '../firebase/config';
 
 const BATCH_SIZE = 10; // Process 10 submissions at a time
 const START_TIMESTAMP = new Date('2026-10-01T00:00:00Z').getTime() / 1000;
@@ -16,19 +8,27 @@ const END_TIMESTAMP = new Date('2027-01-01T00:00:00Z').getTime() / 1000;
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-async function fetchCodesInBatches() {
-  console.log('🔍 Scanning Firestore for missing codes...');
+export async function fetchCodesInBatches(isForce = false): Promise<void> {
+  const LEETCODE_SESSION = process.env.LEETCODE_SESSION;
+  const CSRF_TOKEN = process.env.LEETCODE_CSRF_TOKEN;
+
+  if (!LEETCODE_SESSION || !CSRF_TOKEN) {
+    console.error("❌ Missing LEETCODE_SESSION or LEETCODE_CSRF_TOKEN in backend/.env");
+    throw new Error("Missing LEETCODE_SESSION or LEETCODE_CSRF_TOKEN");
+  }
+
+  console.log(`🔍 Scanning Firestore for ${isForce ? 'all' : 'missing'} codes (Oct-Dec 2026)...`);
 
   // 1. Get all submissions
   const snapshot = await db.collection('submissions').get();
   
-  // 2. Filter for submissions strictly within Oct-Dec 2026 that DO NOT have code or question context
+  // 2. Filter for submissions strictly within Oct-Dec 2026
   const missingCode = snapshot.docs
     .map(doc => ({ docId: doc.id, ...doc.data() as any }))
     .filter(sub => {
       const timestamp = parseInt(sub.timestamp);
       const isWinterArc = timestamp >= START_TIMESTAMP && timestamp < END_TIMESTAMP;
-      const needsData = !sub.code || !sub.questionContext;
+      const needsData = isForce ? true : (!sub.code || !sub.questionContext);
       return isWinterArc && needsData;
     });
 
@@ -36,7 +36,7 @@ async function fetchCodesInBatches() {
 
   if (missingCode.length === 0) {
     console.log('✅ Nothing to do. All codes are downloaded!');
-    process.exit(0);
+    return;
   }
 
   // 3. Process in batches
@@ -97,7 +97,11 @@ async function fetchCodesInBatches() {
         }
       );
 
-      const data = response.data.data;
+      const data = response.data?.data;
+      if (!data) {
+        console.error('❌ No data returned in response:', response.data);
+        continue;
+      }
 
       // 5. Update Firestore with the returned code and question context
       const firestoreBatch = db.batch();
@@ -134,7 +138,15 @@ async function fetchCodesInBatches() {
   }
 
   console.log('\n🎉 All batches complete!');
-  process.exit(0);
 }
 
-fetchCodesInBatches().catch(console.error);
+// Execute directly if run as a CLI script
+if (process.argv[1] && path.basename(process.argv[1]).includes('fetchCodes')) {
+  const isForce = process.argv.includes('--force');
+  fetchCodesInBatches(isForce)
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('❌ Fetch failed:', err);
+      process.exit(1);
+    });
+}
