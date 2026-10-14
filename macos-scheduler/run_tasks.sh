@@ -77,12 +77,45 @@ release_lock() {
 acquire_lock
 
 # ------------------------------------------------------------------------------
-# 4. Task Execution
+# ------------------------------------------------------------------------------
+# 4. Helper: Run with Timeout (prevents hanging indefinitely if connection drops)
+# ------------------------------------------------------------------------------
+run_with_timeout() {
+    local max_seconds="$1"
+    shift
+    "$@" &
+    local cmd_pid=$!
+
+    (
+        sleep "$max_seconds"
+        if kill -0 "$cmd_pid" 2>/dev/null; then
+            kill -TERM "$cmd_pid" 2>/dev/null || true
+            sleep 3
+            kill -KILL "$cmd_pid" 2>/dev/null || true
+        fi
+    ) &
+    local watchdog_pid=$!
+
+    wait "$cmd_pid"
+    local status=$?
+    kill "$watchdog_pid" 2>/dev/null || true
+    wait "$watchdog_pid" 2>/dev/null || true
+    return "$status"
+}
+
+# ------------------------------------------------------------------------------
+# 5. Task Execution
 # ------------------------------------------------------------------------------
 START_TIME=$(date +%s)
 log "================================================================================"
 log "Starting Winter Arc Hourly Task Execution (PID: $$)"
 log "Project Directory: $PROJECT_DIR"
+
+# Check power source
+BATT_STATUS="$("$PMSET_BIN" -g batt 2>/dev/null || echo '')"
+if [[ "$BATT_STATUS" == *"Battery Power"* ]]; then
+    log "NOTE: Mac is on Battery Power. macOS disables background sleep assertions with the lid closed unless connected to AC power."
+fi
 log "================================================================================"
 
 # Change to project root directory
@@ -107,6 +140,21 @@ if [ "$DOCKER_READY" != "true" ]; then
     exit 1
 fi
 
+# Verify network connectivity (wait up to 15s if Wi-Fi just woke up)
+NETWORK_READY=false
+for i in {1..5}; do
+    if nc -zw 2 1.1.1.1 53 >/dev/null 2>&1 || nc -zw 2 8.8.8.8 53 >/dev/null 2>&1; then
+        NETWORK_READY=true
+        break
+    fi
+    log "Waiting for network connectivity to restore (attempt $i/5)..."
+    sleep 3
+done
+
+if [ "$NETWORK_READY" != "true" ]; then
+    log "WARNING: Network connectivity test failed. Proceeding with caution..."
+fi
+
 # Check backend container state
 CONTAINER_STATE="$("$DOCKER_BIN" compose ps --format '{{.Service}}: {{.State}}' 2>/dev/null | grep '^backend:' || echo '')"
 if [[ "$CONTAINER_STATE" != *"running"* ]]; then
@@ -120,10 +168,10 @@ if [[ "$CONTAINER_STATE" != *"running"* ]]; then
     fi
 fi
 
-# STEP 1: Run 'pick:sd'
+# STEP 1: Run 'pick:sd' (max 5 minutes)
 log "─── [1/2] Executing: docker compose exec -T backend npm run pick:sd ───"
 STEP1_START=$(date +%s)
-if "$DOCKER_BIN" compose exec -T backend npm run pick:sd; then
+if run_with_timeout 300 "$DOCKER_BIN" compose exec -T backend npm run pick:sd; then
     STEP1_DURATION=$(( $(date +%s) - STEP1_START ))
     log "Step 1/2 (pick:sd) succeeded in ${STEP1_DURATION}s."
 else
@@ -132,10 +180,10 @@ else
     log "ERROR: Step 1/2 (pick:sd) failed with exit code $STEP1_CODE after ${STEP1_DURATION}s."
 fi
 
-# STEP 2: Run 'sync' (Only after 'pick:sd' finished)
+# STEP 2: Run 'sync' (Only after 'pick:sd' finished, max 10 minutes)
 log "─── [2/2] Executing: docker compose exec -T backend npm run sync ───"
 STEP2_START=$(date +%s)
-if "$DOCKER_BIN" compose exec -T backend npm run sync; then
+if run_with_timeout 600 "$DOCKER_BIN" compose exec -T backend npm run sync; then
     STEP2_DURATION=$(( $(date +%s) - STEP2_START ))
     log "Step 2/2 (sync) succeeded in ${STEP2_DURATION}s."
 else
