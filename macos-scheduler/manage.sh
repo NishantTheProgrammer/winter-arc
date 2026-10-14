@@ -289,6 +289,9 @@ cmd_status() {
         if [ -n "$agent_pid" ]; then
             echo -e "  Current Task PID: ${agent_pid}"
         fi
+        local next_run_time
+        next_run_time="$(date -v+1H -v00M -v00S '+%H:%M:%S (%A, %b %d)')"
+        echo -e "• Next Scheduled Run: ${CYAN}${next_run_time}${NC} (runs every hour at :00)"
     else
         echo -e "${YELLOW}NOT LOADED${NC}"
     fi
