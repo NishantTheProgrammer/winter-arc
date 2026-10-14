@@ -34,7 +34,7 @@ mkdir -p "$LOG_DIR"
 # ------------------------------------------------------------------------------
 if [ -z "${WINTER_ARC_CAFFEINATED:-}" ]; then
     export WINTER_ARC_CAFFEINATED=1
-    exec "$CAFFEINATE_BIN" -ims "$0" "$@"
+    exec "$CAFFEINATE_BIN" -uims "$0" "$@"
 fi
 
 # ------------------------------------------------------------------------------

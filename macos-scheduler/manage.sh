@@ -145,25 +145,39 @@ cmd_setup() {
     chmod +x "${SCRIPT_DIR}/config.sh" "${SCRIPT_DIR}/run_tasks.sh" "${SCRIPT_DIR}/wake_helper.sh" "${SCRIPT_DIR}/manage.sh"
     mkdir -p "$LOG_DIR"
 
+    local target_user="${SUDO_USER:-$USER}"
+    local target_uid
+    target_uid="$(id -u "$target_user")"
+    local target_home
+    target_home="$(eval echo "~$target_user")"
+    local user_agent_plist="${target_home}/Library/LaunchAgents/${AGENT_LABEL}.plist"
+
     # Step 1: Install LaunchAgent in user domain
-    echo -e "${BOLD}Step 1: Installing user LaunchAgent...${NC}"
-    mkdir -p "$HOME/Library/LaunchAgents"
-    generate_agent_plist "$USER_AGENT_PLIST"
-    echo -e "  Created: ${USER_AGENT_PLIST}"
+    echo -e "${BOLD}Step 1: Installing user LaunchAgent (${target_user})...${NC}"
+    mkdir -p "${target_home}/Library/LaunchAgents"
+    generate_agent_plist "$user_agent_plist"
+    chown "$target_user" "$user_agent_plist" 2>/dev/null || true
+    echo -e "  Created: ${user_agent_plist}"
 
-    # Unload previous if loaded
-    local current_uid
-    current_uid="$(id -u)"
-    launchctl bootout "gui/${current_uid}/${AGENT_LABEL}" 2>/dev/null || launchctl unload "$USER_AGENT_PLIST" 2>/dev/null || true
-    sleep 0.5
-
-    # Bootstrap
-    if launchctl bootstrap "gui/${current_uid}" "$USER_AGENT_PLIST" 2>/dev/null; then
-        echo -e "  ${GREEN}✓ LaunchAgent loaded successfully via launchctl bootstrap.${NC}"
-    elif launchctl load "$USER_AGENT_PLIST" 2>/dev/null; then
-        echo -e "  ${GREEN}✓ LaunchAgent loaded successfully via launchctl load.${NC}"
+    # Bootstrap LaunchAgent in user GUI domain
+    if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then
+        sudo -u "$target_user" launchctl bootout "gui/${target_uid}/${AGENT_LABEL}" 2>/dev/null || true
+        sleep 0.5
+        if sudo -u "$target_user" launchctl bootstrap "gui/${target_uid}" "$user_agent_plist" 2>/dev/null || \
+           sudo -u "$target_user" launchctl load "$user_agent_plist" 2>/dev/null; then
+            echo -e "  ${GREEN}✓ LaunchAgent loaded successfully in user session (UID: ${target_uid}).${NC}"
+        else
+            echo -e "  ${YELLOW}⚠️  Note: Could not bootstrap immediately; will activate on next login or run.${NC}"
+        fi
     else
-        echo -e "  ${YELLOW}⚠️  Note: Could not bootstrap immediately; will activate on next login or run.${NC}"
+        launchctl bootout "gui/${target_uid}/${AGENT_LABEL}" 2>/dev/null || true
+        sleep 0.5
+        if launchctl bootstrap "gui/${target_uid}" "$user_agent_plist" 2>/dev/null || \
+           launchctl load "$user_agent_plist" 2>/dev/null; then
+            echo -e "  ${GREEN}✓ LaunchAgent loaded successfully via launchctl bootstrap.${NC}"
+        else
+            echo -e "  ${YELLOW}⚠️  Note: Could not bootstrap immediately; will activate on next login or run.${NC}"
+        fi
     fi
 
     # Step 2: Configure pmset wake schedule & LaunchDaemon (requires sudo)
@@ -273,8 +287,9 @@ cmd_uninstall() {
 # Command: STATUS
 # ------------------------------------------------------------------------------
 cmd_status() {
+    local target_user="${SUDO_USER:-$USER}"
     local current_uid
-    current_uid="$(id -u)"
+    current_uid="$(id -u "$target_user")"
 
     echo -e "${BOLD}======================================================${NC}"
     echo -e "${BOLD}Winter Arc Scheduler Status${NC}"

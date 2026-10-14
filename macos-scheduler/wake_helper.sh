@@ -29,16 +29,20 @@ check_root() {
 cmd_schedule() {
     check_root
     local hours="${1:-$WAKE_HOURS_AHEAD}"
-    echo "Configuring macOS power management settings for background wake..."
+    echo "Configuring macOS power management settings for background wake (Battery & AC)..."
     "$PMSET_BIN" -a womp 1 2>/dev/null || true
     "$PMSET_BIN" -a powernap 1 2>/dev/null || true
+    "$PMSET_BIN" -b womp 1 2>/dev/null || true
+    "$PMSET_BIN" -b powernap 1 2>/dev/null || true
+    "$PMSET_BIN" -b tcpkeepalive 1 2>/dev/null || true
 
     echo "Scheduling upcoming $hours hourly wake events (owner: $PMSET_OWNER)..."
     local count=0
     for (( i=1; i<=hours; i++ )); do
         local wake_time
         wake_time="$(date -v+${i}H -v00M -v00S "+%m/%d/%y %H:%M:%S")"
-        if "$PMSET_BIN" schedule wake "$wake_time" "$PMSET_OWNER" 2>/dev/null; then
+        if "$PMSET_BIN" schedule wakeorpoweron "$wake_time" "$PMSET_OWNER" 2>/dev/null || \
+           "$PMSET_BIN" schedule wake "$wake_time" "$PMSET_OWNER" 2>/dev/null; then
             count=$((count + 1))
         fi
     done
@@ -65,7 +69,9 @@ cmd_cancel() {
                 # Convert 4-digit year to 2-digit if needed (e.g., 2026 -> 26)
                 local short_date
                 short_date="$(echo "$date_str" | sed -E 's#/20([0-9]{2})$#/\1#')"
+                "$PMSET_BIN" schedule cancel wakeorpoweron "${short_date} ${time_str}" "$PMSET_OWNER" 2>/dev/null || \
                 "$PMSET_BIN" schedule cancel wake "${short_date} ${time_str}" "$PMSET_OWNER" 2>/dev/null || \
+                "$PMSET_BIN" schedule cancel wakeorpoweron "${date_str} ${time_str}" "$PMSET_OWNER" 2>/dev/null || \
                 "$PMSET_BIN" schedule cancel wake "${date_str} ${time_str}" "$PMSET_OWNER" 2>/dev/null || true
                 count=$((count + 1))
             fi
