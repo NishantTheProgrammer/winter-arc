@@ -34,7 +34,6 @@ interface LeaderboardProps {
   qotdSlug?: string;
   qotdTitle?: string;
   qotdDifficulty?: string;
-  qotdAcRate?: string | null;
   qotdCompanies?: string[];
   onCopyAnnouncement?: () => void;
   copiedAnnouncement?: boolean;
@@ -51,7 +50,6 @@ export default function Leaderboard({
   qotdSlug,
   qotdTitle,
   qotdDifficulty,
-  qotdAcRate,
   qotdCompanies,
   onCopyAnnouncement,
   copiedAnnouncement,
@@ -181,11 +179,6 @@ export default function Leaderboard({
                     {qotdDifficulty}
                   </span>
                 )}
-                {qotdAcRate && (
-                  <span className="text-[11px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                    {qotdAcRate} ac
-                  </span>
-                )}
                 {qotdCompanies && qotdCompanies.length > 0 && (
                   <span
                     className="text-[11px] text-purple-300 font-medium bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 flex items-center gap-1"
@@ -238,7 +231,7 @@ export default function Leaderboard({
           {qotdTitle && (
             <span className="text-xs text-slate-400">
               Be the first to solve today's challenge: <span className="text-indigo-400 font-medium">{qotdTitle}</span>
-              {qotdDifficulty && ` (${qotdDifficulty}${qotdAcRate ? ` • ${qotdAcRate} ac` : ''})`}
+              {qotdDifficulty && ` (${qotdDifficulty})`}
             </span>
           )}
         </div>

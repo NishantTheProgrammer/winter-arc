@@ -95,3 +95,15 @@ export function formatCompaniesForAnnouncement(companies: string[], previewLimit
   const remaining = sorted.length - previewLimit;
   return `Companies (${sorted.length}): ${topSubset} (+${remaining} more)`;
 }
+
+/**
+ * Returns a sorted list of all unique companies present in the dataset.
+ */
+export function getAllCompanies(): string[] {
+  const companySet = new Set<string>();
+  Object.values(companyMapping).forEach((cos) => {
+    cos.forEach((c) => companySet.add(c));
+  });
+  return Array.from(companySet).sort((a, b) => a.localeCompare(b));
+}
+

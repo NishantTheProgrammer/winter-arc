@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink, Copy, Check, Percent, Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink, Copy, Check, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   DailySystemDesignRecord,
   DIFFICULTY_CONFIG,
@@ -191,9 +191,6 @@ export default function Dashboard() {
   const problemTitle = todayQotd?.title || firstSubWithContext?.title;
   const problemSlug = todayQotd?.titleSlug || firstSubWithContext?.titleSlug;
   const problemDifficulty = todayQotd?.difficulty || firstSubWithContext?.difficulty || 'Medium';
-  const problemAcRate = typeof todayQotd?.acRate === 'number'
-    ? `${todayQotd.acRate.toFixed(1)}%`
-    : (typeof firstSubWithContext?.acRate === 'number' ? `${firstSubWithContext.acRate.toFixed(1)}%` : null);
   const problemId = todayQotd?.questionFrontendId || firstSubWithContext?.questionFrontendId;
   const problemTags = todayQotd?.topicTags || [];
   const problemLink = todayQotd?.link || (problemSlug ? `https://leetcode.com/problems/${problemSlug}/` : null);
@@ -273,7 +270,6 @@ export default function Dashboard() {
           qotdSlug={todayQotd?.titleSlug}
           qotdTitle={todayQotd?.title || firstSubWithContext?.title}
           qotdDifficulty={problemDifficulty}
-          qotdAcRate={problemAcRate}
           qotdCompanies={problemCompanies}
           onCopyAnnouncement={handleCopyAnnouncement}
           copiedAnnouncement={copiedAnnouncement}
@@ -608,13 +604,6 @@ export default function Dashboard() {
                       {diffConfig.label}
                     </span>
 
-                    {problemAcRate && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 bg-indigo-500/10 border-indigo-500/20 text-indigo-300">
-                        <Percent className="w-3 h-3 text-indigo-400" />
-                        <span>{problemAcRate} Acceptance</span>
-                      </span>
-                    )}
-
                     {problemCompanies.length > 0 && (
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 bg-purple-500/10 border-purple-500/25 text-purple-300">
                         <Building2 className="w-3 h-3 text-purple-400" />
@@ -715,16 +704,18 @@ export default function Dashboard() {
                           .map((company) => {
                             const isProminent = isProminentCompany(company);
                             return (
-                              <span
+                              <Link
                                 key={company}
-                                className={`px-2 py-0.5 rounded-md text-[11px] transition-all ${
+                                href={`/submissions?company=${encodeURIComponent(company)}`}
+                                title={`View submissions asked by ${company}`}
+                                className={`px-2 py-0.5 rounded-md text-[11px] transition-all hover:scale-105 cursor-pointer ${
                                   isProminent
-                                    ? 'bg-purple-500/15 border border-purple-500/30 text-purple-200 font-semibold shadow-sm'
-                                    : 'bg-white/5 border border-white/10 text-slate-300 font-normal'
+                                    ? 'bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 font-semibold shadow-sm'
+                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white font-normal'
                                 }`}
                               >
                                 {company}
-                              </span>
+                              </Link>
                             );
                           })}
                         {!showAllCompanies && problemCompanies.length > 8 && (

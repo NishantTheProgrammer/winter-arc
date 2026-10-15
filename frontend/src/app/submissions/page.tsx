@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { FileCode2, CheckCircle2, Clock, ChevronDown, Building2 } from 'lucide-react';
+import { FileCode2, CheckCircle2, Clock, ChevronDown, Building2, Users, X, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SubmissionModal from '@/components/SubmissionModal';
-import { getCompaniesForProblem } from '@/lib/companyMapping';
+import { getCompaniesForProblem, getAllCompanies, isProminentCompany } from '@/lib/companyMapping';
 
 import { getUserTheme, resolveDisplayName } from '@/lib/userTheme';
 
@@ -28,12 +28,23 @@ export default function SubmissionsPage() {
   const [submissions, setSubmissions]   = useState<Submission[]>([]);
   const [loading, setLoading]           = useState(true);
   const [filter, setFilter]             = useState('All');
+  const [companyFilter, setCompanyFilter] = useState('All');
   const [selectedSub, setSelectedSub]   = useState<Submission | null>(null);
   const [avatars, setAvatars]           = useState<Record<string, string>>({});
   const [userColors, setUserColors]     = useState<Record<string, string>>({});
   const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
   const [userList, setUserList]         = useState<string[]>(['All']);
   const [qotdMap, setQotdMap]           = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const c = params.get('company');
+      const u = params.get('user');
+      if (c) setCompanyFilter(c);
+      if (u) setFilter(u);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchSubmissions() {
@@ -116,7 +127,44 @@ export default function SubmissionsPage() {
     fetchSubmissions();
   }, []);
 
-  const filtered = filter === 'All' ? submissions : submissions.filter(s => s.username === filter);
+  const { availableCompanies, companyCounts, allOtherCompanies } = useMemo(() => {
+    const counts: Record<string, number> = {};
+    submissions.forEach(sub => {
+      const cos = getCompaniesForProblem(sub.titleSlug);
+      cos.forEach(c => {
+        counts[c] = (counts[c] || 0) + 1;
+      });
+    });
+
+    const all = getAllCompanies();
+    const withSubs = Object.keys(counts).sort((a, b) => {
+      const aProm = isProminentCompany(a);
+      const bProm = isProminentCompany(b);
+      if (aProm && !bProm) return -1;
+      if (!aProm && bProm) return 1;
+      if (counts[b] !== counts[a]) return counts[b] - counts[a];
+      return a.localeCompare(b);
+    });
+
+    const withoutSubs = all.filter(c => !counts[c]);
+
+    return {
+      availableCompanies: withSubs,
+      companyCounts: counts,
+      allOtherCompanies: withoutSubs,
+    };
+  }, [submissions]);
+
+  const filtered = useMemo(() => {
+    return submissions.filter(s => {
+      if (filter !== 'All' && s.username !== filter) return false;
+      if (companyFilter !== 'All') {
+        const cos = getCompaniesForProblem(s.titleSlug);
+        if (!cos.includes(companyFilter)) return false;
+      }
+      return true;
+    });
+  }, [submissions, filter, companyFilter]);
 
   const getInitial = (username: string) => {
     const dName = displayNames[username] || resolveDisplayName(username, displayNames);
@@ -126,33 +174,140 @@ export default function SubmissionsPage() {
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10">
       {/* Header */}
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1
-            className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text"
-            style={{ backgroundImage: 'linear-gradient(90deg, #818cf8, #a855f7, #ec4899)' }}
-          >
-            Submissions
-          </h1>
-          <p className="text-slate-500 mt-1 text-sm">{filtered.length} accepted submissions</p>
+      <div className="mb-6 sm:mb-8 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div>
+            <h1
+              className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text"
+              style={{ backgroundImage: 'linear-gradient(90deg, #818cf8, #a855f7, #ec4899)' }}
+            >
+              Submissions
+            </h1>
+            <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
+              <span className="text-slate-400">
+                {filtered.length} {filtered.length === 1 ? 'submission' : 'submissions'}
+                {submissions.length !== filtered.length ? ` of ${submissions.length}` : ''}
+              </span>
+              {(filter !== 'All' || companyFilter !== 'All') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilter('All');
+                    setCompanyFilter('All');
+                  }}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium flex items-center gap-1 cursor-pointer ml-1"
+                >
+                  <X className="w-3 h-3" /> Clear filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filter dropdowns (User + Company) */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Filter by User */}
+            <div className="relative">
+              <select
+                value={filter}
+                onChange={e => setFilter(e.target.value)}
+                className="appearance-none pl-9 pr-9 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                {userList.map(u => (
+                  <option key={u} value={u} style={{ background: '#1e1e3a' }}>
+                    {u === 'All' ? 'All Users' : (displayNames[u] ? `${displayNames[u]} (@${u})` : `@${u}`)}
+                  </option>
+                ))}
+              </select>
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+            </div>
+
+            {/* Filter by Company */}
+            <div className="relative">
+              <select
+                value={companyFilter}
+                onChange={e => setCompanyFilter(e.target.value)}
+                className={`appearance-none pl-9 pr-9 py-2 rounded-xl text-xs sm:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${
+                  companyFilter !== 'All'
+                    ? 'text-purple-200 bg-purple-500/20 border border-purple-500/40 shadow-sm'
+                    : 'text-slate-300 bg-white/5 border border-white/10'
+                }`}
+              >
+                <option value="All" style={{ background: '#1e1e3a' }}>
+                  All Companies ({submissions.length})
+                </option>
+                {availableCompanies.length > 0 && (
+                  <optgroup label="Companies with submissions" style={{ background: '#1e1e3a' }}>
+                    {availableCompanies.map(c => (
+                      <option key={c} value={c} style={{ background: '#1e1e3a' }}>
+                        {c} ({companyCounts[c]} {companyCounts[c] === 1 ? 'submission' : 'submissions'})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {allOtherCompanies.length > 0 && (
+                  <optgroup label="Other companies" style={{ background: '#1e1e3a' }}>
+                    {allOtherCompanies.map(c => (
+                      <option key={c} value={c} style={{ background: '#1e1e3a' }}>
+                        {c} (0)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${companyFilter !== 'All' ? 'text-purple-400' : 'text-slate-500'}`} />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+            </div>
+          </div>
         </div>
 
-        {/* Filter dropdown */}
-        <div className="relative self-start sm:self-auto">
-          <select
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            className="appearance-none pl-4 pr-10 py-2 rounded-xl text-sm font-medium text-slate-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            {userList.map(u => (
-              <option key={u} value={u} style={{ background: '#1e1e3a' }}>
-                {u === 'All' ? 'All Users' : (displayNames[u] ? `${displayNames[u]} (@${u})` : `@${u}`)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-        </div>
+        {/* Quick filter company pills */}
+        {availableCompanies.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar text-xs">
+            <span className="text-slate-400 text-xs font-semibold flex items-center gap-1 shrink-0 mr-1">
+              <Building2 className="w-3.5 h-3.5 text-purple-400" />
+              <span>Company:</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setCompanyFilter('All')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                companyFilter === 'All'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                  : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10'
+              }`}
+            >
+              All
+            </button>
+
+            {availableCompanies.slice(0, 12).map(c => {
+              const isSelected = companyFilter === c;
+              const count = companyCounts[c];
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCompanyFilter(isSelected ? 'All' : c)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-purple-500/25 border border-purple-500/50 text-purple-200 shadow-sm'
+                      : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10'
+                  }`}
+                >
+                  <span>{c}</span>
+                  <span className={`text-[10px] px-1 py-0.2 rounded font-mono ${
+                    isSelected ? 'bg-purple-500/40 text-white' : 'bg-white/10 text-slate-400'
+                  }`}>
+                    {count}
+                  </span>
+                  {isSelected && <X className="w-3 h-3 text-purple-300" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -214,10 +369,9 @@ export default function SubmissionsPage() {
                   {(() => {
                     const qInfo = qotdMap[sub.titleSlug] || qotdMap[sub.date];
                     const diff = qInfo?.difficulty;
-                    const acRate = typeof qInfo?.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
                     const cos = getCompaniesForProblem(sub.titleSlug);
 
-                    if (!diff && !acRate && cos.length === 0) return null;
+                    if (!diff && cos.length === 0) return null;
 
                     return (
                       <div className="inline-flex items-center gap-1.5 flex-wrap">
@@ -245,19 +399,27 @@ export default function SubmissionsPage() {
                             {diff}
                           </span>
                         )}
-                        {acRate && (
-                          <span className="text-[10px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                            {acRate} ac
-                          </span>
-                        )}
                         {cos.length > 0 && (
-                          <span
-                            className="text-[10px] text-purple-300 font-medium bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 flex items-center gap-1"
-                            title={`Asked by ${cos.length} companies: ${cos.slice(0, 5).join(', ')}${cos.length > 5 ? '...' : ''}`}
-                          >
-                            <Building2 className="w-2.5 h-2.5 text-purple-400" />
-                            <span>{cos.length} {cos.length === 1 ? 'co.' : 'cos.'}</span>
-                          </span>
+                          <div className="inline-flex items-center gap-1">
+                            {companyFilter !== 'All' && cos.includes(companyFilter) && (
+                              <span className="text-[10px] text-purple-200 font-semibold bg-purple-500/25 px-1.5 py-0.5 rounded border border-purple-500/40 flex items-center gap-1 shadow-sm">
+                                <Building2 className="w-2.5 h-2.5 text-purple-300" />
+                                <span>{companyFilter}</span>
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCompanyFilter(companyFilter === cos[0] ? 'All' : cos[0]);
+                              }}
+                              className="text-[10px] text-purple-300 hover:text-white font-medium bg-purple-500/10 hover:bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                              title={`Asked by ${cos.length} companies: ${cos.slice(0, 8).join(', ')}${cos.length > 8 ? '...' : ''}. Click to filter by ${cos[0]}.`}
+                            >
+                              <Building2 className="w-2.5 h-2.5 text-purple-400" />
+                              <span>{cos.length} {cos.length === 1 ? 'co.' : 'cos.'}</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                     );

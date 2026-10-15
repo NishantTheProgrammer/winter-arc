@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -26,7 +27,6 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
 
   const qInfo = qotdMap?.[selectedSub.titleSlug] || qotdMap?.[selectedSub.date];
   const diff = qInfo?.difficulty;
-  const acRate = typeof qInfo?.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
   const companies = getCompaniesForProblem(selectedSub.titleSlug);
   const sortedCompanies = getSortedCompanies(companies);
 
@@ -82,11 +82,6 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
                   {diff}
                 </span>
               )}
-              {acRate && (
-                <span className="text-[11px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                  {acRate} ac
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2 ml-2 shrink-0">
               <a
@@ -114,21 +109,28 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
                 <span>Asked by {companies.length} {companies.length === 1 ? 'Company' : 'Companies'}:</span>
               </span>
               {sortedCompanies.slice(0, 8).map((c) => (
-                <span
+                <Link
                   key={c}
-                  className={`px-1.5 py-0.5 rounded text-[10px] ${
+                  href={`/submissions?company=${encodeURIComponent(c)}`}
+                  onClick={() => setSelectedSub(null)}
+                  title={`Filter submissions asked by ${c}`}
+                  className={`px-1.5 py-0.5 rounded text-[10px] transition-all hover:scale-105 cursor-pointer ${
                     isProminentCompany(c)
-                      ? 'bg-purple-500/15 border border-purple-500/30 text-purple-200 font-semibold shadow-sm'
-                      : 'bg-white/5 border border-white/10 text-slate-300'
+                      ? 'bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 font-semibold shadow-sm'
+                      : 'bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white'
                   }`}
                 >
                   {c}
-                </span>
+                </Link>
               ))}
               {companies.length > 8 && (
-                <span className="text-[10px] text-purple-400 font-medium bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10">
+                <Link
+                  href={`/submissions`}
+                  onClick={() => setSelectedSub(null)}
+                  className="text-[10px] text-purple-400 hover:text-purple-300 font-medium bg-purple-500/5 hover:bg-purple-500/15 px-1.5 py-0.5 rounded border border-purple-500/10 transition-colors"
+                >
                   +{companies.length - 8} more
-                </span>
+                </Link>
               )}
             </div>
           )}
