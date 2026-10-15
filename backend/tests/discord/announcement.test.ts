@@ -77,3 +77,12 @@ test('isResourcesUnlockedIST respects 6:00 PM IST unlock rule', () => {
   // Past dates are always unlocked
   assert.strictEqual(isResourcesUnlockedIST('2026-10-14', morningDate), true);
 });
+
+test('cleanQuestionContext strips HTML and preserves constraints intact', async () => {
+  const { cleanQuestionContext } = await import('../../src/langgraph/nodes/analyzeCode');
+  const rawHtml = '<p>Some problem text with <strong>markup</strong></p><pre>Example 1: nums = [1,2]</pre><p>&nbsp;</p><p><strong>Constraints:</strong></p><ul><li><code>1 &lt;= nums.length &lt;= 100</code></li></ul>';
+  const cleaned = cleanQuestionContext(rawHtml);
+  assert.ok(!cleaned.includes('<p>'));
+  assert.ok(!cleaned.includes('&lt;='));
+  assert.ok(cleaned.includes('1 <= nums.length <= 100'));
+});

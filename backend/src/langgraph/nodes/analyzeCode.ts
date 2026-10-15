@@ -46,35 +46,81 @@ const llm = new ChatOllama({
   numCtx: 4096,
 });
 
+// Helper to strip HTML bloat while preserving full problem text and critical Constraints
+export function cleanQuestionContext(context: string): string {
+  if (!context) return 'No description available';
+
+  const constraintsMatch = context.match(/(?:<strong>)?Constraints:(?:<\/strong>)?[\s\S]*?(?:<\/ul>|$)/i);
+
+  const cleaned = context
+    .replace(/<pre>[\s\S]*?<\/pre>/gi, (m) => m.replace(/<[^>]+>/g, ''))
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (constraintsMatch && !cleaned.toLowerCase().includes('constraints:')) {
+    const cleanedConstraints = constraintsMatch[0].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return `${cleaned.substring(0, 2500)}\n\nConstraints: ${cleanedConstraints}`;
+  }
+
+  return cleaned.substring(0, 3000);
+}
+
 export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentState>> => {
+  const cleanedProblemContext = cleanQuestionContext(state.questionContext);
+
   const prompt = `
     You are an expert DSA & Competitive Programming evaluator analyzing an accepted LeetCode submission.
-    Evaluate the submitted code strictly and objectively against the THEORETICAL OPTIMAL solution for this problem.
+    Evaluate the submitted code strictly and objectively against the THEORETICAL OPTIMAL solution for this problem under the given problem constraints.
 
-    CRITICAL SCORING RULES:
-    - Do NOT grade inflate. A standard or mediocre solution must receive 5 to 6, NOT 8 or 9.
-    - Differentiate clearly between naive, acceptable, and truly optimal implementations.
-    - LeetCode submissions do not need comments or input validation. NEVER mention or deduct points for a lack of comments, docstrings, or parameter null-checks.
+    CRITICAL EVALUATION & ANTI-HALLUCINATION RULES:
+    1. CONSTRAINT-AWARE COMPLEXITY DERIVATION:
+       - Always examine the input constraints to determine the expected optimal time complexity:
+         * N <= 10 -> O(N!) or O(2^N * N)
+         * N <= 20 -> O(2^N)
+         * N <= 100 -> O(N^3) or O(N^2) is standard and optimal
+         * N <= 2,000 -> O(N^2)
+         * N <= 200,000 -> O(N log N) or O(N)
+         * N >= 10^9 -> O(sqrt(N)), O(log N), or O(1)
+       - Do NOT assume O(N) is always possible. Many problems have higher theoretical lower bounds (e.g. O(N^2), O(N log N), O(N * K)).
+       - If the submitted code achieves the theoretical optimal complexity for this problem under the given constraints, award 9-10 for timeComplexityScore.
+
+    2. STRICT ALGORITHMIC PREREQUISITES (NEVER HALLUCINATE IMPOSSIBLE SHORTCUTS):
+       - Never recommend an algorithmic technique unless its strict mathematical prerequisites are satisfied:
+         * Sliding Window / Two Pointers: Strictly requires MONOTONICITY (expanding/shrinking a contiguous window predictably). It CANNOT be used to evaluate or sum over all subarrays if the property is non-monotonic.
+         * Binary Search: Strictly requires a sorted array or a monotonic search predicate f(x) -> bool.
+         * Greedy: Strictly requires the greedy-choice property and optimal substructure.
+       - Never claim a faster solution exists unless you can name the exact valid algorithm and explain why it mathematically applies.
+
+    3. OBJECTIVE SCORING (NO GRADE INFLATION, BUT NO UNFAIR PENALTIES):
+       - If a solution is optimal for the given problem constraints, award 9-10 in efficiency.
+       - If a genuinely faster asymptotic algorithm exists (e.g. O(N^2) submitted when a known O(N) or O(N log N) algorithm solves the problem under large N), penalize timeComplexityScore accordingly (4-6).
+       - LeetCode submissions do not need comments or input validation. NEVER deduct points for a lack of comments, docstrings, or parameter null-checks.
 
     SCORING ANCHORS (1 - 10):
-
     1. timeComplexityScore (out of 10):
-       - 10: Theoretical optimal Big-O time complexity with minimal constant factor overhead (e.g. O(N) when the lower bound is O(N)).
-       - 8-9: Optimal Big-O, but with slight constant factor inefficiencies (e.g. redundant passes or extra map lookups).
-       - 6-7: Near-optimal Big-O (e.g. O(N log N) using sorting/heap when an O(N) linear time solution exists, or O(N log K)).
-       - 4-5: Sub-optimal Big-O that barely passed test cases (e.g. O(N^2) or O(N * K) when O(N) is standard).
+       - 10: Theoretical optimal Big-O for this problem under its constraints with minimal constant factor overhead.
+       - 8-9: Matches the optimal/intended Big-O for the given constraints, with minor constant factor overhead.
+       - 6-7: Near-optimal Big-O (e.g. O(N log N) when an O(N) exists, or O(N^2) when an O(N log N) exists for large N).
+       - 4-5: Sub-optimal Big-O that barely passed test cases (e.g. O(N^2) when N >= 10^5 and an O(N) or O(N log N) algorithm exists).
        - 1-3: Naive brute force or exponential recursion without memoization.
 
     2. spaceComplexityScore (out of 10):
-       - 10: Optimal auxiliary space (e.g. O(1) auxiliary space / in-place modifications if feasible).
+       - 10: Optimal auxiliary space for this problem (O(1) if in-place is feasible, or minimal unavoidable auxiliary space).
        - 8-9: Minimal auxiliary space necessary (e.g. O(N) where extra memory cannot be avoided).
-       - 6-7: Uses extra auxiliary memory (e.g. O(N) hash map/array when an O(1) two-pointer / in-place approach is possible).
-       - 4-5: Unnecessary deep copies, excessive auxiliary buffers, or redundant hash structures.
+       - 6-7: Uses extra auxiliary memory (e.g. O(N) when O(1) in-place is possible).
+       - 4-5: Unnecessary deep copies or redundant auxiliary structures.
        - 1-3: Memory limit edge / highly wasteful allocation.
 
     3. readabilityScore (out of 10):
-       - 9-10: Self-documenting, meaningful variable names ('left', 'right', 'currentSum'), intuitive structure, clean indentation.
-       - 6-8: Mostly readable, but uses obscure or single-letter variable names ('k1', 'temp2', 'arr3') or unnecessarily cryptic logic.
+       - 9-10: Self-documenting, meaningful variable names, intuitive structure, clean indentation.
+       - 6-8: Mostly readable, but uses obscure or single-letter variable names or unnecessarily cryptic logic.
        - 1-5: Convoluted, obfuscated code, messy layout.
 
     4. maintainabilityScore (out of 10):
@@ -89,7 +135,7 @@ export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentS
 
     6. edgeCasesScore (out of 10):
        - 9-10: Elegantly handles empty inputs, single-element, duplicates, and extremes naturally through the core algorithm logic.
-       - 6-8: Relies on ad-hoc, tacked-on 'if' statements at the top to patch edge cases rather than handling them gracefully in the algorithm.
+       - 6-8: Relies on ad-hoc, tacked-on 'if' statements to patch edge cases.
        - 1-5: Fragile boundary conditions, barely skirted past constraints.
 
     7. errorHandlingScore (out of 10):
@@ -99,16 +145,12 @@ export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentS
 
     ALGORITHMIC APPROACH MAPPING RULES:
     1. Identify the exact DSA approaches/techniques used in the submitted code.
-    2. Every approach MUST be chosen strictly from the LEAF level in the DSA hierarchy (e.g. "Dynamic Programming > Memoization", "Two Pointers > Sliding Window > Fixed Size", "Stack > Matching").
-    3. Do NOT stop at parent or intermediate categories (e.g. never output just "Dynamic Programming" or "Two Pointers").
+    2. Every approach MUST be chosen strictly from the LEAF level in the DSA hierarchy.
+    3. Do NOT stop at parent or intermediate categories.
     4. Only identify techniques that are ACTUALLY implemented. Return between 1 and 3 precise leaf approaches.
 
-    Provide concise feedback highlighting:
-    1. The actual Time and Space Big-O of this submission vs the theoretical optimal Big-O.
-    2. Concrete suggestions to improve time, space, or elegance.
-
     ==== PROBLEM CONTEXT ====
-    ${state.questionContext.substring(0, 1500)}
+    ${cleanedProblemContext}
 
     ==== SUBMITTED CODE (${state.lang}) ====
     ${state.code}
@@ -118,6 +160,13 @@ export const analyzeCodeNode = async (state: AgentState): Promise<Partial<AgentS
 
     Output valid JSON strictly in the following format:
     {
+      "complexityAnalysis": {
+        "problemConstraints": "string",
+        "submittedTimeComplexity": "string",
+        "submittedSpaceComplexity": "string",
+        "optimalTimeComplexity": "string",
+        "isOptimalForConstraints": boolean
+      },
       "timeComplexityScore": number,
       "spaceComplexityScore": number,
       "readabilityScore": number,
