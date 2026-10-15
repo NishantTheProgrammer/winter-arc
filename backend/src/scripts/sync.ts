@@ -11,6 +11,7 @@
  *   npx tsx src/scripts/sync.ts --force   # Force refresh of all submissions and analysis
  */
 
+import { syncQOTD } from './seedQOTD';
 import { seedUsers } from './seedUsers';
 import { fetchCodesInBatches } from './fetchCodes';
 import { runAnalysisBatch } from './analyzePending';
@@ -24,16 +25,20 @@ async function main() {
   console.log('================================================================\n');
 
   try {
-    // Step 1: Seed users and new submissions
-    console.log('--- Step 1/3: Seeding Users & Submissions ---');
+    // Step 1: Sync LeetCode Question of the Day challenges & problem statements
+    console.log('--- Step 1/4: Syncing Question of the Day ---');
+    await syncQOTD(isForce);
+
+    // Step 2: Seed users and new submissions
+    console.log('\n--- Step 2/4: Seeding Users & Submissions ---');
     await seedUsers(isForce);
 
-    // Step 2: Fetch missing source codes
-    console.log('\n--- Step 2/3: Fetching Source Codes ---');
+    // Step 3: Fetch missing source codes
+    console.log('\n--- Step 3/4: Fetching Source Codes ---');
     await fetchCodesInBatches(isForce);
 
-    // Step 3: Run AI analysis on pending submissions
-    console.log('\n--- Step 3/3: Running AI Analysis ---');
+    // Step 4: Run AI analysis on pending submissions
+    console.log('\n--- Step 4/4: Running AI Analysis ---');
     await runAnalysisBatch(isForce);
 
     console.log('\n================================================================');

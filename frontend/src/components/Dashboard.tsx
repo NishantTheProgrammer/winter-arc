@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Layers, ArrowRight, Lock, Unlock, Zap, Clock } from 'lucide-react';
+import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink } from 'lucide-react';
 import {
   DailySystemDesignRecord,
   DIFFICULTY_CONFIG,
@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [systemDesignMap, setSystemDesignMap] = useState<Record<string, DailySystemDesignRecord>>({});
   const [dashboardSdIndex, setDashboardSdIndex] = useState<number>(0);
   const [loading, setLoading]               = useState(true);
+  const [qotdLoading, setQotdLoading]       = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -139,14 +140,52 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // Fetch QOTD via API route if selected date is missing full data/content
+  useEffect(() => {
+    const istToday = getISTTime().dateStr;
+    const isFuture = selectedDate > istToday;
+    const currentQotd = qotdMap[selectedDate];
+
+    if (!isFuture && (!currentQotd || !currentQotd.content || currentQotd.content === 'No description available')) {
+      let isCancelled = false;
+      setQotdLoading(true);
+
+      fetch(`/api/qotd?date=${selectedDate}`)
+        .then(res => res.json())
+        .then(json => {
+          if (!isCancelled && json.success && json.data) {
+            setQotdMap(prev => ({
+              ...prev,
+              [selectedDate]: json.data,
+            }));
+          }
+        })
+        .catch(err => {
+          console.warn('Failed to fetch QOTD via API route:', err);
+        })
+        .finally(() => {
+          if (!isCancelled) setQotdLoading(false);
+        });
+
+      return () => {
+        isCancelled = true;
+      };
+    }
+  }, [selectedDate, qotdMap]);
+
   // Filter submissions for the currently selected date
   const daySubmissions = submissions.filter(s => s.date === selectedDate);
   const todayQotd = qotdMap[selectedDate];
 
-  // Get the problem statement and title, prioritizing the QOTD
+  // Get problem statement, title, and metadata prioritizing QOTD
   const firstSubWithContext = daySubmissions.find(s => s.questionContext && (!todayQotd || s.titleSlug === todayQotd.titleSlug)) || daySubmissions.find(s => s.questionContext);
-  const problemStatement = firstSubWithContext?.questionContext;
+  const problemStatement = todayQotd?.content || firstSubWithContext?.questionContext;
   const problemTitle = todayQotd?.title || firstSubWithContext?.title;
+  const problemSlug = todayQotd?.titleSlug || firstSubWithContext?.titleSlug;
+  const problemDifficulty = todayQotd?.difficulty || firstSubWithContext?.difficulty || 'Medium';
+  const problemId = todayQotd?.questionFrontendId || firstSubWithContext?.questionFrontendId;
+  const problemTags = todayQotd?.topicTags || [];
+  const problemLink = todayQotd?.link || (problemSlug ? `https://leetcode.com/problems/${problemSlug}/` : null);
 
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
@@ -169,6 +208,7 @@ export default function Dashboard() {
           displayNames={displayNames}
           userColors={userColors}
           qotdSlug={todayQotd?.titleSlug}
+          qotdTitle={todayQotd?.title || firstSubWithContext?.title}
           loading={loading}
           onRowClick={(username) => {
             let sub;
@@ -432,15 +472,148 @@ export default function Dashboard() {
           );
         })()}
 
-        {problemStatement && problemStatement !== "No description available" && (
-          <div className="w-full min-w-0 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 text-white text-sm overflow-hidden">
-            <h3 className="font-bold text-lg sm:text-xl mb-4 text-indigo-400 break-words">{problemTitle || 'Problem of the Day'}</h3>
-            <div 
-              className="leetcode-content max-h-[400px] overflow-y-auto overflow-x-auto text-slate-300 pr-2 custom-scrollbar max-w-full"
-              dangerouslySetInnerHTML={{ __html: problemStatement }}
-            />
-          </div>
-        )}
+        {/* LeetCode Question of the Day for the selected date */}
+        {(() => {
+          const istToday = getISTTime().dateStr;
+          const isSelectedToday = selectedDate === istToday;
+          const isFuture = selectedDate > istToday;
+
+          // 1. Future Dates
+          if (isFuture && !todayQotd) {
+            return (
+              <div className="w-full min-w-0 glass border border-white/10 rounded-2xl p-5 sm:p-6 text-white relative overflow-hidden">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold">
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>LeetCode Daily Challenge</span>
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-xs font-mono">
+                    {selectedDate}
+                  </span>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex items-center gap-3 text-slate-300 text-sm">
+                  <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <h5 className="font-bold text-white text-sm">Upcoming LeetCode Daily Challenge</h5>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      The official daily coding challenge for {selectedDate} will be released on LeetCode on this date.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // 2. Loading state when we have no title and no submissions yet and it is loading
+          if (qotdLoading && !problemTitle && !problemStatement) {
+            return (
+              <div className="w-full min-w-0 glass border border-white/10 rounded-2xl p-6 text-white flex items-center justify-center gap-3 py-12">
+                <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-slate-400">Loading daily challenge details...</span>
+              </div>
+            );
+          }
+
+          // 3. Render problem if title or statement is available
+          if (problemTitle || (problemStatement && problemStatement !== "No description available")) {
+            const diffLower = (problemDifficulty || 'medium').toLowerCase();
+            const diffConfig = diffLower === 'easy'
+              ? { bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-300', dot: '#10b981', label: 'Easy' }
+              : diffLower === 'hard'
+              ? { bg: 'bg-rose-500/15', border: 'border-rose-500/30', text: 'text-rose-300', dot: '#f43f5e', label: 'Hard' }
+              : { bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-300', dot: '#f59e0b', label: 'Medium' };
+
+            return (
+              <div className="w-full min-w-0 glass border border-white/10 rounded-2xl p-5 sm:p-6 text-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                {/* Top header row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold">
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>LeetCode Challenge • {isSelectedToday ? "Today's Challenge" : selectedDate}</span>
+                    </span>
+
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 ${diffConfig.bg} ${diffConfig.border} ${diffConfig.text}`}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: diffConfig.dot }} />
+                      {diffConfig.label}
+                    </span>
+
+                    {problemId && (
+                      <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-xs font-mono border border-white/10">
+                        Problem #{problemId}
+                      </span>
+                    )}
+                  </div>
+
+                  {problemLink && (
+                    <a
+                      href={problemLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-indigo-300 hover:text-indigo-200 text-xs font-semibold border border-white/10 hover:border-indigo-500/30 transition-all self-start sm:self-auto shadow-sm"
+                    >
+                      <span>Solve on LeetCode</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+
+                {/* Title and tags */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-indigo-300 transition-colors">
+                      {problemTitle || 'Problem of the Day'}
+                    </h3>
+                  </div>
+
+                  {problemTags.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      {problemTags.map((t: any) => (
+                        <span
+                          key={t.slug || t.name}
+                          className="px-2 py-0.5 rounded-md bg-white/5 text-slate-400 text-[11px] border border-white/5"
+                        >
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                {problemStatement && problemStatement !== "No description available" ? (
+                  <div 
+                    className="leetcode-content max-h-[400px] overflow-y-auto overflow-x-auto text-slate-300 pr-2 custom-scrollbar max-w-full text-sm border-t border-white/5 pt-4"
+                    dangerouslySetInnerHTML={{ __html: problemStatement }}
+                  />
+                ) : qotdLoading ? (
+                  <div className="flex items-center gap-2 py-6 text-slate-400 text-sm justify-center border-t border-white/5">
+                    <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    <span>Loading problem statement...</span>
+                  </div>
+                ) : (
+                  <div className="py-4 text-slate-400 text-sm border-t border-white/5 flex items-center justify-between gap-3">
+                    <span>Problem statement description is available directly on LeetCode.</span>
+                    {problemLink && (
+                      <a
+                        href={problemLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium inline-flex items-center gap-1 shrink-0"
+                      >
+                        View on LeetCode <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return null;
+        })()}
       </div>
 
       <AnimatePresence>

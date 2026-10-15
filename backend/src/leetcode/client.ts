@@ -130,7 +130,7 @@ export async function getQuestionOfTheDay(): Promise<any> {
           acRate
           difficulty
           freqBar
-          frontendQuestionId: questionFrontendId
+          questionFrontendId
           isFavor
           paidOnly: isPaidOnly
           status
@@ -143,14 +143,25 @@ export async function getQuestionOfTheDay(): Promise<any> {
             id
             slug
           }
+          content
         }
       }
     }
   `;
 
   try {
-    const response = await axios.post(LEETCODE_API_URL, { query });
-    return response.data.data.activeDailyCodingChallengeQuestion;
+    const response = await axios.post(
+      LEETCODE_API_URL,
+      { query },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      }
+    );
+    return response.data?.data?.activeDailyCodingChallengeQuestion || null;
   } catch (error) {
     console.error('Error fetching question of the day:', error);
     return null;
@@ -170,13 +181,113 @@ export async function getQuestionData(titleSlug: string): Promise<string | null>
   `;
 
   try {
-    const response = await axios.post(LEETCODE_API_URL, {
-      query,
-      variables: { titleSlug }
-    });
-    return response.data.data.question.content;
+    const response = await axios.post(
+      LEETCODE_API_URL,
+      {
+        query,
+        variables: { titleSlug },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      }
+    );
+    return response.data?.data?.question?.content || null;
   } catch (error) {
     console.error(`Error fetching question data for ${titleSlug}:`, error);
     return null;
   }
 }
+
+/**
+ * Fetch full problem details by titleSlug
+ */
+export async function getFullQuestionDetails(titleSlug: string): Promise<any> {
+  const query = `
+    query fullQuestionDetails($titleSlug: String!) {
+      question(titleSlug: $titleSlug) {
+        questionFrontendId
+        title
+        titleSlug
+        difficulty
+        content
+        topicTags {
+          name
+          slug
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(
+      LEETCODE_API_URL,
+      {
+        query,
+        variables: { titleSlug },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      }
+    );
+    return response.data?.data?.question || null;
+  } catch (error) {
+    console.error(`Error fetching full question details for ${titleSlug}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch daily coding challenges for a specific month
+ */
+export async function getDailyCodingChallenges(year: number, month: number): Promise<any[]> {
+  const query = `
+    query dailyCodingChallengeV2($year: Int!, $month: Int!) {
+      dailyCodingChallengeV2(year: $year, month: $month) {
+        challenges {
+          date
+          link
+          question {
+            questionFrontendId
+            title
+            titleSlug
+            difficulty
+            topicTags {
+              name
+              slug
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(
+      LEETCODE_API_URL,
+      {
+        query,
+        variables: { year, month },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      }
+    );
+    return response.data?.data?.dailyCodingChallengeV2?.challenges || [];
+  } catch (error) {
+    console.error(`Error fetching daily challenges for ${year}-${month}:`, error);
+    return [];
+  }
+}
+

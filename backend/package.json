@@ -9,6 +9,7 @@
     "fetch": "npx tsx src/scripts/fetchCodes.ts",
     "analyze": "npx tsx src/scripts/analyzePending.ts",
     "sync": "npx tsx src/scripts/sync.ts",
+    "seed:qotd": "npx tsx src/scripts/seedQOTD.ts",
     "reanalyze": "npx tsx src/scripts/resetAndReanalyze.ts",
     "pick:sd": "npx tsx src/scripts/pickSystemDesign.ts",
     "test:discord": "node --import tsx --test tests/discord/*.test.ts",

@@ -33,6 +33,22 @@ router.get('/submissions/:username', async (req, res) => {
   }
 });
 
+// ── GET /api/qotd and /api/qotd/:date ─────────────────────────────────────
+// Returns stored Question of the Day for a date (defaults to today)
+router.get(['/qotd', '/qotd/:date'], async (req, res) => {
+  const date = req.params.date || new Date().toISOString().split('T')[0];
+  try {
+    const docRef = db.collection('qotd').doc(date);
+    const snap = await docRef.get();
+    if (snap.exists) {
+      return res.json({ success: true, data: snap.data() });
+    }
+    return res.status(404).json({ success: false, message: `No QOTD found for ${date}` });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch QOTD' });
+  }
+});
+
 // ── POST /api/trigger ──────────────────────────────────────────────────────
 // Endpoint to trigger manual fetch and analysis
 router.post('/trigger', async (req, res) => {

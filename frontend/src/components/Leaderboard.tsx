@@ -32,6 +32,7 @@ interface LeaderboardProps {
   displayNames?: Record<string, string>;
   userColors?: Record<string, string>;
   qotdSlug?: string;
+  qotdTitle?: string;
   loading?: boolean;
   onRowClick?: (username: string) => void;
 }
@@ -43,6 +44,7 @@ export default function Leaderboard({
   displayNames,
   userColors,
   qotdSlug,
+  qotdTitle,
   loading: externalLoading,
   onRowClick,
 }: LeaderboardProps) {
@@ -138,7 +140,14 @@ export default function Leaderboard({
       <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2 flex-wrap">
         <div className="flex items-center gap-2 sm:gap-3">
           <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400 shrink-0" />
-          <h2 className="text-lg sm:text-xl font-bold tracking-wide">{dateTitle}</h2>
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold tracking-wide">{dateTitle}</h2>
+            {qotdTitle && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                Challenge: <span className="text-indigo-300 font-medium">{qotdTitle}</span>
+              </p>
+            )}
+          </div>
         </div>
         <span className="text-xs text-slate-500 bg-white/5 px-3 py-1 rounded-lg border border-white/5 shrink-0">
           {date}
@@ -151,8 +160,13 @@ export default function Leaderboard({
           Loading scores...
         </div>
       ) : scores.length === 0 ? (
-        <div className="py-8 text-center text-slate-500 text-sm">
-          No submissions for {isToday ? "today" : "this date"} yet.
+        <div className="py-8 text-center text-slate-500 text-sm flex flex-col items-center gap-1.5">
+          <span>No submissions for {isToday ? "today" : "this date"} yet.</span>
+          {qotdTitle && (
+            <span className="text-xs text-slate-400">
+              Be the first to solve today's challenge: <span className="text-indigo-400 font-medium">{qotdTitle}</span>
+            </span>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
