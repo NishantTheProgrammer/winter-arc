@@ -94,7 +94,7 @@ generate_daemon_plist() {
     <key>ProgramArguments</key>
     <array>
         <string>${APP_SUPPORT_DIR}/wake_helper.sh</string>
-        <string>refresh</string>
+        <string>run</string>
     </array>
 
     <key>WorkingDirectory</key>
@@ -152,33 +152,15 @@ cmd_setup() {
     target_home="$(eval echo "~$target_user")"
     local user_agent_plist="${target_home}/Library/LaunchAgents/${AGENT_LABEL}.plist"
 
-    # Step 1: Install LaunchAgent in user domain
-    echo -e "${BOLD}Step 1: Installing user LaunchAgent (${target_user})...${NC}"
-    mkdir -p "${target_home}/Library/LaunchAgents"
-    generate_agent_plist "$user_agent_plist"
-    chown "$target_user" "$user_agent_plist" 2>/dev/null || true
-    echo -e "  Created: ${user_agent_plist}"
-
-    # Bootstrap LaunchAgent in user GUI domain
+    # Step 1: Clean up any old user-level LaunchAgent (user agents are frozen in DarkWake by macOS)
+    echo -e "${BOLD}Step 1: Removing old user LaunchAgent (to enable true closed-lid DarkWake execution)...${NC}"
     if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then
         sudo -u "$target_user" launchctl bootout "gui/${target_uid}/${AGENT_LABEL}" 2>/dev/null || true
-        sleep 0.5
-        if sudo -u "$target_user" launchctl bootstrap "gui/${target_uid}" "$user_agent_plist" 2>/dev/null || \
-           sudo -u "$target_user" launchctl load "$user_agent_plist" 2>/dev/null; then
-            echo -e "  ${GREEN}✓ LaunchAgent loaded successfully in user session (UID: ${target_uid}).${NC}"
-        else
-            echo -e "  ${YELLOW}⚠️  Note: Could not bootstrap immediately; will activate on next login or run.${NC}"
-        fi
     else
         launchctl bootout "gui/${target_uid}/${AGENT_LABEL}" 2>/dev/null || true
-        sleep 0.5
-        if launchctl bootstrap "gui/${target_uid}" "$user_agent_plist" 2>/dev/null || \
-           launchctl load "$user_agent_plist" 2>/dev/null; then
-            echo -e "  ${GREEN}✓ LaunchAgent loaded successfully via launchctl bootstrap.${NC}"
-        else
-            echo -e "  ${YELLOW}⚠️  Note: Could not bootstrap immediately; will activate on next login or run.${NC}"
-        fi
     fi
+    rm -f "$user_agent_plist" 2>/dev/null || true
+    echo -e "  ${GREEN}✓ User LaunchAgent removed. Background execution moved to System LaunchDaemon.${NC}"
 
     # Step 2: Configure pmset wake schedule & LaunchDaemon (requires sudo)
     echo ""
@@ -336,26 +318,13 @@ cmd_status() {
     echo -e "${BOLD}Winter Arc Scheduler Status${NC}"
     echo -e "${BOLD}======================================================${NC}"
 
-    # 1. LaunchAgent Status
-    echo -n "• User LaunchAgent ($AGENT_LABEL): "
-    if launchctl print "gui/${current_uid}/${AGENT_LABEL}" >/dev/null 2>&1; then
-        echo -e "${GREEN}LOADED & ACTIVE${NC}"
-        local agent_pid
-        agent_pid="$(launchctl print "gui/${current_uid}/${AGENT_LABEL}" 2>/dev/null | grep -E 'pid = [0-9]+' | head -1 | awk '{print $3}' || echo '')"
-        if [ -n "$agent_pid" ]; then
-            echo -e "  Current Task PID: ${agent_pid}"
-        fi
+    # 1. System LaunchDaemon Status (Primary runner for closed-lid execution)
+    echo -n "• System LaunchDaemon ($DAEMON_LABEL): "
+    if launchctl print "system/${DAEMON_LABEL}" >/dev/null 2>&1; then
+        echo -e "${GREEN}LOADED & ACTIVE (Runs in DarkWake with lid closed)${NC}"
         local next_run_time
         next_run_time="$(date -v+1H -v00M -v00S '+%H:%M:%S (%A, %b %d)')"
-        echo -e "• Next Scheduled Run: ${CYAN}${next_run_time}${NC} (runs every hour at :00)"
-    else
-        echo -e "${YELLOW}NOT LOADED${NC}"
-    fi
-
-    # 2. System Wake Daemon Status
-    echo -n "• System WakeDaemon ($DAEMON_LABEL): "
-    if launchctl print "system/${DAEMON_LABEL}" >/dev/null 2>&1; then
-        echo -e "${GREEN}LOADED${NC}"
+        echo -e "• Next Scheduled Run: ${CYAN}${next_run_time}${NC} (hourly at :00)"
     else
         echo -e "${YELLOW}NOT LOADED${NC}"
     fi
@@ -430,6 +399,99 @@ cmd_logs() {
 }
 
 # ------------------------------------------------------------------------------
+# Command: TEST-WAKE (Test closed-lid execution in N minutes)
+# ------------------------------------------------------------------------------
+cmd_test_wake() {
+    local input="${1:-2}"
+    local target_hour target_min target_time human_time
+
+    if [[ "$input" =~ ^([0-9]{1,2}):([0-9]{2}) ]]; then
+        target_hour="${BASH_REMATCH[1]}"
+        target_min="${BASH_REMATCH[2]}"
+        # If hour is 11 and current hour is >= 12, assume PM (23)
+        if [ "$target_hour" -eq 11 ] && [ "$(date +%H)" -ge 12 ]; then
+            target_hour=23
+        fi
+        target_time="$(date -v${target_hour}H -v${target_min}M -v00S '+%m/%d/%y %H:%M:%S')"
+        human_time="$(date -v${target_hour}H -v${target_min}M -v00S '+%H:%M:00 (%I:%M %p)')"
+    else
+        local mins="${input}"
+        target_time="$(date -v+${mins}M -v00S '+%m/%d/%y %H:%M:%S')"
+        target_min="$(date -v+${mins}M '+%-M')"
+        target_hour="$(date -v+${mins}M '+%-H')"
+        human_time="$(date -v+${mins}M '+%H:%M:00 (%I:%M %p)')"
+    fi
+
+    echo -e "${CYAN}${BOLD}⚡ Setting up Closed-Lid Wake Execution for ${human_time}...${NC}"
+    
+    # Ensure fresh copies of helper and config are installed in APP_SUPPORT_DIR
+    run_as_root mkdir -p "$APP_SUPPORT_DIR"
+    run_as_root cp "${SCRIPT_DIR}/wake_helper.sh" "${APP_SUPPORT_DIR}/wake_helper.sh"
+    run_as_root cp "${SCRIPT_DIR}/config.sh" "${APP_SUPPORT_DIR}/config.sh"
+    run_as_root chmod -R 755 "$APP_SUPPORT_DIR"
+
+    # 1. Schedule pmset RTC wake
+    run_as_root "$PMSET_BIN" schedule wakeorpoweron "$target_time" "$PMSET_OWNER" 2>/dev/null || \
+    run_as_root "$PMSET_BIN" schedule wake "$target_time" "$PMSET_OWNER" 2>/dev/null
+    
+    # 2. Update LaunchDaemon to trigger at target_hour:target_min as well
+    local temp_daemon_plist="/tmp/${DAEMON_LABEL}.plist"
+    cat <<EOF > "$temp_daemon_plist"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>${DAEMON_LABEL}</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>${APP_SUPPORT_DIR}/wake_helper.sh</string>
+        <string>run</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>${APP_SUPPORT_DIR}</string>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>${target_hour}</integer>
+            <key>Minute</key>
+            <integer>${target_min}</integer>
+        </dict>
+        <dict>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>${LOG_DIR}/wake.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>${LOG_DIR}/wake.stderr.log</string>
+</dict>
+</plist>
+EOF
+    chmod 644 "$temp_daemon_plist"
+    run_as_root cp "$temp_daemon_plist" "$SYSTEM_DAEMON_PLIST"
+    run_as_root chown root:wheel "$SYSTEM_DAEMON_PLIST"
+    run_as_root chmod 644 "$SYSTEM_DAEMON_PLIST"
+    rm -f "$temp_daemon_plist"
+
+    # Reload LaunchDaemon
+    run_as_root launchctl bootout "system/${DAEMON_LABEL}" 2>/dev/null || true
+    sleep 0.5
+    run_as_root launchctl bootstrap system "$SYSTEM_DAEMON_PLIST" 2>/dev/null || run_as_root launchctl load "$SYSTEM_DAEMON_PLIST" 2>/dev/null || true
+
+    echo -e "${GREEN}${BOLD}✓ Test scheduled for ${human_time}!${NC}"
+    echo -e "${YELLOW}👉 Close your laptop lid on battery power NOW.${NC}"
+    echo -e "Your Mac will sleep, wake at ${human_time} with lid closed, and post 'hi' to Discord!"
+}
+
+# ------------------------------------------------------------------------------
 # Main Dispatcher
 # ------------------------------------------------------------------------------
 case "${1:-status}" in
@@ -449,6 +511,9 @@ case "${1:-status}" in
         ;;
     status)
         cmd_status
+        ;;
+    test-wake)
+        cmd_test_wake "${2:-2}"
         ;;
     run-now)
         cmd_run_now

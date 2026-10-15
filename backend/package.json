@@ -14,6 +14,7 @@
     "pick:sd": "npx tsx src/scripts/pickSystemDesign.ts",
     "announce:discord": "npx tsx src/scripts/postDiscordAnnouncement.ts",
     "announce:sd-solution": "npx tsx src/scripts/postSDSolution.ts",
+    "ping:discord": "npx tsx src/scripts/pingDiscord.ts",
     "test:discord": "node --import tsx --test tests/discord/*.test.ts",
     "test": "npm run test:discord"
   },

@@ -18,7 +18,7 @@ export PMSET_BIN="${PMSET_BIN:-/usr/bin/pmset}"
 export LAUNCHCTL_BIN="${LAUNCHCTL_BIN:-/bin/launchctl}"
 
 # Ensure PATH covers standard user and Homebrew locations
-export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:${PATH}"
+export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME:-/Users/nishant}/.local/bin:${PATH:-/usr/bin:/bin}"
 
 # Scheduler Identifiers
 export AGENT_LABEL="com.winterarc.hourlysync"
@@ -31,7 +31,7 @@ export LOG_FILE="${LOG_DIR}/scheduler.log"
 export LOCK_FILE="${LOG_DIR}/scheduler.lock"
 
 # Plist destination paths
-export USER_AGENT_PLIST="$HOME/Library/LaunchAgents/${AGENT_LABEL}.plist"
+export USER_AGENT_PLIST="${HOME:-/Users/nishant}/Library/LaunchAgents/${AGENT_LABEL}.plist"
 export SYSTEM_DAEMON_PLIST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
 export SUDOERS_FILE="/etc/sudoers.d/winterarc"
 export APP_SUPPORT_DIR="/Library/Application Support/WinterArc"

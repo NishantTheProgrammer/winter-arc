@@ -106,6 +106,56 @@ cmd_refresh() {
     fi
 }
 
+cmd_run() {
+    check_root
+    local log_file="${LOG_FILE:-${SCRIPT_DIR}/logs/scheduler.log}"
+    mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+    
+    # 1. Replenish scheduled wake events
+    cmd_refresh >> "$log_file" 2>&1 || true
+    
+    # 2. Prevent sleep while running
+    "$PMSET_BIN" -a disablesleep 1 2>/dev/null || true
+    trap '"$PMSET_BIN" -a disablesleep 0 2>/dev/null || true' EXIT INT TERM
+    
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚡ [System Daemon] Closed-lid execution started (PID: $$)" >> "$log_file"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Power State: $("$PMSET_BIN" -g batt 2>/dev/null | grep -oE "'.*'" || echo 'Unknown')" >> "$log_file"
+
+    local batt_percent
+    batt_percent="$("$PMSET_BIN" -g batt 2>/dev/null | grep -oE '[0-9]+%' || echo 'N/A')"
+    local heartbeat_msg="hi from closed-lid scheduler! 🔋 Battery: ${batt_percent}"
+    
+    export DOCKER_HOST="unix:///Users/nishant/.docker/run/docker.sock"
+    local container="${BACKEND_CONTAINER:-winter-arc-backend-1}"
+
+    # STEP 1: pick:sd
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ─── [1/5] Executing: npm run pick:sd ───" >> "$log_file"
+    "$DOCKER_BIN" exec -i "$container" npm run pick:sd >> "$log_file" 2>&1 || true
+
+    # STEP 2: sync
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ─── [2/5] Executing: npm run sync ───" >> "$log_file"
+    "$DOCKER_BIN" exec -i "$container" npm run sync >> "$log_file" 2>&1 || true
+
+    # STEP 3: announce:discord
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ─── [3/5] Executing: npm run announce:discord ───" >> "$log_file"
+    "$DOCKER_BIN" exec -i "$container" npm run announce:discord >> "$log_file" 2>&1 || true
+
+    # STEP 4: announce:sd-solution
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ─── [4/5] Executing: npm run announce:sd-solution ───" >> "$log_file"
+    "$DOCKER_BIN" exec -i "$container" npm run announce:sd-solution >> "$log_file" 2>&1 || true
+
+    # STEP 5: ping:discord
+    local batt_percent
+    batt_percent="$("$PMSET_BIN" -g batt 2>/dev/null | grep -oE '[0-9]+%' || echo 'N/A')"
+    local heartbeat_msg="hi from scheduler! 🔋 Battery: ${batt_percent}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ─── [5/5] Executing: npm run ping:discord ───" >> "$log_file"
+    "$DOCKER_BIN" exec -i "$container" npm run ping:discord -- "$heartbeat_msg" >> "$log_file" 2>&1 || true
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🌙 [System Daemon] Winter Arc Execution Completed. Restoring sleep." >> "$log_file"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ================================================================================\n" >> "$log_file"
+    "$PMSET_BIN" -a disablesleep 0 2>/dev/null || true
+}
+
 case "${1:-status}" in
     schedule)
         cmd_schedule "${2:-$WAKE_HOURS_AHEAD}"
@@ -119,8 +169,11 @@ case "${1:-status}" in
     refresh)
         cmd_refresh
         ;;
+    run)
+        cmd_run
+        ;;
     *)
-        echo "Usage: $0 {schedule [hours]|cancel|status|refresh}" >&2
+        echo "Usage: $0 {schedule [hours]|cancel|status|refresh|run}" >&2
         exit 1
         ;;
 esac

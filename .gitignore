@@ -34,3 +34,6 @@ Thumbs.db
 # Firebase service account keys
 serviceAccountKey.json
 *-firebase-adminsdk-*.json
+
+# Cloned datasets
+leetcode-company-wise-problems/
