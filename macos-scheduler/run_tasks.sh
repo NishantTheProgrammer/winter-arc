@@ -47,12 +47,53 @@ log() {
 }
 
 # ------------------------------------------------------------------------------
-# 3. Lockfile Handling (Prevent Overlapping Executions)
+# 3. Lockfile & Clamshell Power Management
 # ------------------------------------------------------------------------------
+WATCHDOG_PID=""
+DISABLESLEEP_ENGAGED=0
+
+enable_clamshell_execution() {
+    # If on battery power, temporarily suspend sleep so closed lid does not freeze task
+    local batt_status
+    batt_status="$("$PMSET_BIN" -g batt 2>/dev/null || echo '')"
+    if [[ "$batt_status" == *"Battery Power"* ]]; then
+        if sudo -n "$PMSET_BIN" -a disablesleep 1 >/dev/null 2>&1; then
+            DISABLESLEEP_ENGAGED=1
+            log "⚡ Clamshell battery execution active (sleep temporarily held for this run)."
+            
+            # Watchdog: Force restore sleep mode after 15 minutes if something catastrophic occurs
+            (
+                sleep 900
+                sudo -n "$PMSET_BIN" -a disablesleep 0 >/dev/null 2>&1 || true
+            ) &
+            WATCHDOG_PID=$!
+        else
+            log "NOTE: Mac is on Battery Power. (Tip: run './manage.sh setup' once to enable seamless closed-lid execution)."
+        fi
+    fi
+}
+
+cleanup() {
+    # 1. Kill safety watchdog if still running
+    if [ -n "$WATCHDOG_PID" ] && kill -0 "$WATCHDOG_PID" 2>/dev/null; then
+        kill "$WATCHDOG_PID" 2>/dev/null || true
+    fi
+
+    # 2. Re-enable normal sleep mode immediately
+    if [ "$DISABLESLEEP_ENGAGED" -eq 1 ]; then
+        sudo -n "$PMSET_BIN" -a disablesleep 0 >/dev/null 2>&1 || true
+        log "🌙 Re-enabled normal sleep mode. Mac may now sleep if lid is closed."
+    fi
+
+    # 3. Release lockfile
+    rm -f "$LOCK_FILE"
+}
+
 acquire_lock() {
     if ( set -o noclobber; echo "$$" > "$LOCK_FILE" ) 2>/dev/null; then
         # Lock acquired
-        trap 'release_lock' EXIT INT TERM
+        trap 'cleanup' EXIT INT TERM
+        enable_clamshell_execution
         return 0
     else
         # Lock exists, verify if process is still alive
@@ -64,19 +105,15 @@ acquire_lock() {
         else
             log "Stale lock detected (PID: $active_pid is not running). Reclaiming lock."
             echo "$$" > "$LOCK_FILE"
-            trap 'release_lock' EXIT INT TERM
+            trap 'cleanup' EXIT INT TERM
+            enable_clamshell_execution
             return 0
         fi
     fi
 }
 
-release_lock() {
-    rm -f "$LOCK_FILE"
-}
-
 acquire_lock
 
-# ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # 4. Helper: Run with Timeout (prevents hanging indefinitely if connection drops)
 # ------------------------------------------------------------------------------
@@ -110,12 +147,7 @@ START_TIME=$(date +%s)
 log "================================================================================"
 log "Starting Winter Arc Hourly Task Execution (PID: $$)"
 log "Project Directory: $PROJECT_DIR"
-
-# Check power source
-BATT_STATUS="$("$PMSET_BIN" -g batt 2>/dev/null || echo '')"
-if [[ "$BATT_STATUS" == *"Battery Power"* ]]; then
-    log "NOTE: Mac is on Battery Power. macOS disables background sleep assertions with the lid closed unless connected to AC power."
-fi
+log "Power State: $("$PMSET_BIN" -g batt 2>/dev/null | grep -oE "'.*'" || echo 'Unknown')"
 log "================================================================================"
 
 # Change to project root directory

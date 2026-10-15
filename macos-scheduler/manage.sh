@@ -93,12 +93,12 @@ generate_daemon_plist() {
 
     <key>ProgramArguments</key>
     <array>
-        <string>${SCRIPT_DIR}/wake_helper.sh</string>
+        <string>${APP_SUPPORT_DIR}/wake_helper.sh</string>
         <string>refresh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>${SCRIPT_DIR}</string>
+    <string>${APP_SUPPORT_DIR}</string>
 
     <!-- Run every hour to keep upcoming pmset wake events populated -->
     <key>StartCalendarInterval</key>
@@ -185,10 +185,16 @@ cmd_setup() {
     echo -e "${BOLD}Step 2: Configuring macOS wake scheduling (pmset + LaunchDaemon)...${NC}"
     echo -e "  This enables periodic waking when the Mac lid is closed / sleeping."
     
+    echo -e "  Installing system wake helper in ${APP_SUPPORT_DIR}..."
+    run_as_root mkdir -p "$APP_SUPPORT_DIR"
+    run_as_root cp "${SCRIPT_DIR}/wake_helper.sh" "${APP_SUPPORT_DIR}/wake_helper.sh"
+    run_as_root cp "${SCRIPT_DIR}/config.sh" "${APP_SUPPORT_DIR}/config.sh"
+    run_as_root chmod -R 755 "$APP_SUPPORT_DIR"
+
     local temp_daemon_plist="/tmp/${DAEMON_LABEL}.plist"
     generate_daemon_plist "$temp_daemon_plist"
 
-    echo -e "  Prompting for sudo to install root wake daemon and configure pmset..."
+    echo -e "  Installing root wake daemon plist..."
     run_as_root cp "$temp_daemon_plist" "$SYSTEM_DAEMON_PLIST"
     run_as_root chown root:wheel "$SYSTEM_DAEMON_PLIST"
     run_as_root chmod 644 "$SYSTEM_DAEMON_PLIST"
@@ -200,7 +206,23 @@ cmd_setup() {
     run_as_root launchctl bootstrap system "$SYSTEM_DAEMON_PLIST" 2>/dev/null || run_as_root launchctl load "$SYSTEM_DAEMON_PLIST" 2>/dev/null || true
 
     # Schedule initial batch of hourly wake events
-    run_as_root "${SCRIPT_DIR}/wake_helper.sh" schedule "$WAKE_HOURS_AHEAD"
+    run_as_root "${APP_SUPPORT_DIR}/wake_helper.sh" schedule "$WAKE_HOURS_AHEAD"
+
+    # Step 3: Configure passwordless pmset for seamless closed-lid execution on battery
+    echo ""
+    echo -e "${BOLD}Step 3: Configuring sudoers permission for closed-lid execution...${NC}"
+    echo -e "  Allows run_tasks.sh to temporarily suspend sleep exclusively during task execution."
+    local temp_sudoers="/tmp/winterarc_sudoers"
+    echo "%admin ALL=(ALL) NOPASSWD: /usr/bin/pmset" > "$temp_sudoers"
+    if run_as_root visudo -cf "$temp_sudoers" >/dev/null 2>&1; then
+        run_as_root cp "$temp_sudoers" "$SUDOERS_FILE"
+        run_as_root chown root:wheel "$SUDOERS_FILE"
+        run_as_root chmod 440 "$SUDOERS_FILE"
+        echo -e "  ${GREEN}✓ Sudoers permission configured for pmset in ${SUDOERS_FILE}.${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  Could not validate sudoers syntax; skipping sudoers setup.${NC}"
+    fi
+    rm -f "$temp_sudoers"
 
     echo ""
     echo -e "${GREEN}${BOLD}🎉 Setup complete!${NC}"
@@ -231,7 +253,7 @@ cmd_start() {
 
     if [ -f "$SYSTEM_DAEMON_PLIST" ]; then
         run_as_root launchctl bootstrap system "$SYSTEM_DAEMON_PLIST" 2>/dev/null || run_as_root launchctl load "$SYSTEM_DAEMON_PLIST" 2>/dev/null || true
-        run_as_root "${SCRIPT_DIR}/wake_helper.sh" schedule "$WAKE_HOURS_AHEAD"
+        run_as_root "${APP_SUPPORT_DIR}/wake_helper.sh" schedule "$WAKE_HOURS_AHEAD"
         echo -e "  ${GREEN}✓ Wake scheduler daemon & pmset active.${NC}"
     fi
 }
@@ -251,7 +273,11 @@ cmd_stop() {
     # Unload root daemon & cancel pmset wakes if present
     if [ -f "$SYSTEM_DAEMON_PLIST" ]; then
         run_as_root launchctl bootout "system/${DAEMON_LABEL}" 2>/dev/null || run_as_root launchctl unload "$SYSTEM_DAEMON_PLIST" 2>/dev/null || true
-        run_as_root "${SCRIPT_DIR}/wake_helper.sh" cancel
+        if [ -f "${APP_SUPPORT_DIR}/wake_helper.sh" ]; then
+            run_as_root "${APP_SUPPORT_DIR}/wake_helper.sh" cancel
+        else
+            run_as_root "${SCRIPT_DIR}/wake_helper.sh" cancel 2>/dev/null || true
+        fi
         echo -e "  ${GREEN}✓ System wake daemon unloaded & scheduled wake events cancelled.${NC}"
     fi
 
@@ -278,6 +304,21 @@ cmd_uninstall() {
         run_as_root rm -f "$SYSTEM_DAEMON_PLIST"
         echo -e "  Removed: $SYSTEM_DAEMON_PLIST"
     fi
+
+    # Remove sudoers rule
+    if [ -f "$SUDOERS_FILE" ]; then
+        run_as_root rm -f "$SUDOERS_FILE"
+        echo -e "  Removed: $SUDOERS_FILE"
+    fi
+
+    # Remove application support directory
+    if [ -d "$APP_SUPPORT_DIR" ]; then
+        run_as_root rm -rf "$APP_SUPPORT_DIR"
+        echo -e "  Removed: $APP_SUPPORT_DIR"
+    fi
+
+    # Ensure normal sleep mode is guaranteed active
+    run_as_root "$PMSET_BIN" -a disablesleep 0 2>/dev/null || true
 
     rm -f "$LOCK_FILE"
     echo -e "${GREEN}${BOLD}✓ Scheduler completely uninstalled.${NC}"

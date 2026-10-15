@@ -33,6 +33,8 @@ export LOCK_FILE="${LOG_DIR}/scheduler.lock"
 # Plist destination paths
 export USER_AGENT_PLIST="$HOME/Library/LaunchAgents/${AGENT_LABEL}.plist"
 export SYSTEM_DAEMON_PLIST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
+export SUDOERS_FILE="/etc/sudoers.d/winterarc"
+export APP_SUPPORT_DIR="/Library/Application Support/WinterArc"
 
 # Scheduling Settings
 # Hours ahead to keep scheduled in pmset wake table (default: 24 hours)
