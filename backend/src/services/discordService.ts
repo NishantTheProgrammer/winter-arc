@@ -23,6 +23,7 @@ export interface AnnouncementData {
   };
   plainText: string;
   embed: any;
+  poll?: any;
 }
 
 export function calculateDayNumber(dateStr: string): number {
@@ -148,6 +149,29 @@ export async function prepareAnnouncementData(targetDateInput?: string): Promise
     ],
   };
 
+  // 5. Discord Interactive Poll
+  const poll = {
+    question: {
+      text: "How did you solve today's challenge?",
+    },
+    answers: [
+      {
+        poll_media: {
+          text: 'Solved without research',
+          emoji: { name: '🧠' },
+        },
+      },
+      {
+        poll_media: {
+          text: 'Solved with research',
+          emoji: { name: '🔍' },
+        },
+      },
+    ],
+    duration: 24, // 24 hours
+    allow_multiselect: false,
+  };
+
   return {
     targetDate,
     dayNumber,
@@ -167,6 +191,7 @@ export async function prepareAnnouncementData(targetDateInput?: string): Promise
     },
     plainText,
     embed,
+    poll,
   };
 }
 
@@ -263,6 +288,7 @@ export async function sendDailyAnnouncement(
   const sendRes = await sendDiscordMessage({
     content: payload.content,
     embeds: payload.embeds,
+    poll: announcement.poll,
     maxRetries: 3,
     initialDelayMs: 2000,
   });

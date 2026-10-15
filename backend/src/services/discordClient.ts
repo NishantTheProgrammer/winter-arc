@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 export interface SendMessageOptions {
   content?: string;
   embeds?: any[];
+  poll?: any;
   username?: string;
   avatar_url?: string;
   maxRetries?: number;
@@ -176,9 +177,14 @@ export async function sendDiscordMessage(options: SendMessageOptions): Promise<S
       payload.content = chunk;
     }
 
-    // Only attach embeds to the first chunk
-    if (i === 0 && options.embeds && options.embeds.length > 0) {
-      payload.embeds = options.embeds;
+    // Only attach embeds and poll to the first chunk
+    if (i === 0) {
+      if (options.embeds && options.embeds.length > 0) {
+        payload.embeds = options.embeds;
+      }
+      if (options.poll) {
+        payload.poll = options.poll;
+      }
     }
 
     if (webhookUrl) {
