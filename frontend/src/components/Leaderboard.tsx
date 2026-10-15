@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Cpu, Code2, BookOpen } from 'lucide-react';
+import { Trophy, Cpu, Code2, BookOpen, Copy, Check } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -33,6 +33,10 @@ interface LeaderboardProps {
   userColors?: Record<string, string>;
   qotdSlug?: string;
   qotdTitle?: string;
+  qotdDifficulty?: string;
+  qotdAcRate?: string | null;
+  onCopyAnnouncement?: () => void;
+  copiedAnnouncement?: boolean;
   loading?: boolean;
   onRowClick?: (username: string) => void;
 }
@@ -45,6 +49,10 @@ export default function Leaderboard({
   userColors,
   qotdSlug,
   qotdTitle,
+  qotdDifficulty,
+  qotdAcRate,
+  onCopyAnnouncement,
+  copiedAnnouncement,
   loading: externalLoading,
   onRowClick,
 }: LeaderboardProps) {
@@ -143,15 +151,69 @@ export default function Leaderboard({
           <div>
             <h2 className="text-lg sm:text-xl font-bold tracking-wide">{dateTitle}</h2>
             {qotdTitle && (
-              <p className="text-xs text-slate-400 mt-0.5">
-                Challenge: <span className="text-indigo-300 font-medium">{qotdTitle}</span>
-              </p>
+              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                <p className="text-xs text-slate-400">
+                  Challenge: <span className="text-indigo-300 font-medium">{qotdTitle}</span>
+                </p>
+                {qotdDifficulty && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+                      qotdDifficulty.toLowerCase() === 'easy'
+                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                        : qotdDifficulty.toLowerCase() === 'hard'
+                        ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                        : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                    }`}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{
+                        backgroundColor:
+                          qotdDifficulty.toLowerCase() === 'easy'
+                            ? '#10b981'
+                            : qotdDifficulty.toLowerCase() === 'hard'
+                            ? '#f43f5e'
+                            : '#f59e0b',
+                      }}
+                    />
+                    {qotdDifficulty}
+                  </span>
+                )}
+                {qotdAcRate && (
+                  <span className="text-[11px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                    {qotdAcRate} ac
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
-        <span className="text-xs text-slate-500 bg-white/5 px-3 py-1 rounded-lg border border-white/5 shrink-0">
-          {date}
-        </span>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {onCopyAnnouncement && (
+            <button
+              type="button"
+              onClick={onCopyAnnouncement}
+              title="Copy Daily WhatsApp Announcement"
+              className="px-2.5 py-1 text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              {copiedAnnouncement ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-300 font-semibold text-[11px]">Copied Post!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[11px] text-slate-300 hidden sm:inline">Copy Post</span>
+                </>
+              )}
+            </button>
+          )}
+          <span className="text-xs text-slate-500 bg-white/5 px-3 py-1 rounded-lg border border-white/5 shrink-0">
+            {date}
+          </span>
+        </div>
       </div>
 
       {loading ? (
@@ -165,6 +227,7 @@ export default function Leaderboard({
           {qotdTitle && (
             <span className="text-xs text-slate-400">
               Be the first to solve today's challenge: <span className="text-indigo-400 font-medium">{qotdTitle}</span>
+              {qotdDifficulty && ` (${qotdDifficulty}${qotdAcRate ? ` • ${qotdAcRate} ac` : ''})`}
             </span>
           )}
         </div>

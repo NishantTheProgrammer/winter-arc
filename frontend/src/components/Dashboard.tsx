@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink } from 'lucide-react';
+import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink, Copy, Check, Percent } from 'lucide-react';
 import {
   DailySystemDesignRecord,
   DIFFICULTY_CONFIG,
@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [dashboardSdIndex, setDashboardSdIndex] = useState<number>(0);
   const [loading, setLoading]               = useState(true);
   const [qotdLoading, setQotdLoading]       = useState(false);
+  const [copiedAnnouncement, setCopiedAnnouncement] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -183,9 +184,59 @@ export default function Dashboard() {
   const problemTitle = todayQotd?.title || firstSubWithContext?.title;
   const problemSlug = todayQotd?.titleSlug || firstSubWithContext?.titleSlug;
   const problemDifficulty = todayQotd?.difficulty || firstSubWithContext?.difficulty || 'Medium';
+  const problemAcRate = typeof todayQotd?.acRate === 'number'
+    ? `${todayQotd.acRate.toFixed(1)}%`
+    : (typeof firstSubWithContext?.acRate === 'number' ? `${firstSubWithContext.acRate.toFixed(1)}%` : null);
   const problemId = todayQotd?.questionFrontendId || firstSubWithContext?.questionFrontendId;
   const problemTags = todayQotd?.topicTags || [];
   const problemLink = todayQotd?.link || (problemSlug ? `https://leetcode.com/problems/${problemSlug}/` : null);
+
+  // Format daily group announcement matching the user's WhatsApp post format
+  const getDailyAnnouncementText = () => {
+    // 1. Calculate Day Number from ARC start 2026-10-01
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const start = new Date(2026, 9, 1);
+    const current = new Date(y, m - 1, d);
+    const diffTime = current.getTime() - start.getTime();
+    const dayNumber = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+    // 2. Leetcode section
+    const diff = problemDifficulty || 'Medium';
+    const lcUrl = problemLink || (problemSlug ? `https://leetcode.com/problems/${problemSlug}` : '');
+
+    // 3. System design section
+    const sdRecord = systemDesignMap[selectedDate];
+    let sdSection = '';
+
+    if (sdRecord && sdRecord.problems && sdRecord.problems.length > 0) {
+      if (sdRecord.problems.length === 1) {
+        const p = sdRecord.problems[0];
+        sdSection = `\n\nSystem design: ${p.title}\n\n${p.problem_statement}`;
+      } else {
+        const titles = sdRecord.problems.map(p => p.title).join(' & ');
+        const details = sdRecord.problems.map((p, idx) => `Problem ${idx + 1} (${p.title}):\n${p.problem_statement}`).join('\n\n');
+        sdSection = `\n\nSystem design: ${titles}\n\n${details}`;
+      }
+    } else {
+      const backfillStatus = findBackfillForDate(selectedDate, Object.values(systemDesignMap));
+      if (backfillStatus.isBackfilled && backfillStatus.problem) {
+        sdSection = `\n\nSystem design: ${backfillStatus.problem.title}\n\n${backfillStatus.problem.problem_statement}`;
+      }
+    }
+
+    return `Day ${dayNumber}: ${diff}\n\nLeetcode:\n${lcUrl}${sdSection}`;
+  };
+
+  const handleCopyAnnouncement = async () => {
+    try {
+      const text = getDailyAnnouncementText();
+      await navigator.clipboard.writeText(text);
+      setCopiedAnnouncement(true);
+      setTimeout(() => setCopiedAnnouncement(false), 2500);
+    } catch (e) {
+      console.error('Failed to copy announcement to clipboard:', e);
+    }
+  };
 
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
@@ -209,6 +260,10 @@ export default function Dashboard() {
           userColors={userColors}
           qotdSlug={todayQotd?.titleSlug}
           qotdTitle={todayQotd?.title || firstSubWithContext?.title}
+          qotdDifficulty={problemDifficulty}
+          qotdAcRate={problemAcRate}
+          onCopyAnnouncement={handleCopyAnnouncement}
+          copiedAnnouncement={copiedAnnouncement}
           loading={loading}
           onRowClick={(username) => {
             let sub;
@@ -540,6 +595,13 @@ export default function Dashboard() {
                       {diffConfig.label}
                     </span>
 
+                    {problemAcRate && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 bg-indigo-500/10 border-indigo-500/20 text-indigo-300">
+                        <Percent className="w-3 h-3 text-indigo-400" />
+                        <span>{problemAcRate} Acceptance</span>
+                      </span>
+                    )}
+
                     {problemId && (
                       <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-xs font-mono border border-white/10">
                         Problem #{problemId}
@@ -547,17 +609,39 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {problemLink && (
-                    <a
-                      href={problemLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-indigo-300 hover:text-indigo-200 text-xs font-semibold border border-white/10 hover:border-indigo-500/30 transition-all self-start sm:self-auto shadow-sm"
+                  <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                    {/* Copy Announcement for WhatsApp / Group */}
+                    <button
+                      type="button"
+                      onClick={handleCopyAnnouncement}
+                      title="Copy daily challenge announcement for WhatsApp group"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold border border-white/10 hover:border-white/20 transition-all shadow-sm"
                     >
-                      <span>Solve on LeetCode</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
+                      {copiedAnnouncement ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-300">Copied Group Post!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Copy Group Post</span>
+                        </>
+                      )}
+                    </button>
+
+                    {problemLink && (
+                      <a
+                        href={problemLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-200 hover:text-white text-xs font-semibold border border-indigo-500/30 hover:border-indigo-500/50 transition-all shadow-sm"
+                      >
+                        <span>Solve on LeetCode</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 {/* Title and tags */}
@@ -623,6 +707,7 @@ export default function Dashboard() {
           submissions={submissions} 
           avatars={avatars} 
           userColors={userColors}
+          qotdMap={qotdMap}
         />
       </AnimatePresence>
     </div>

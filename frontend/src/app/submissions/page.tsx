@@ -32,10 +32,21 @@ export default function SubmissionsPage() {
   const [userColors, setUserColors]     = useState<Record<string, string>>({});
   const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
   const [userList, setUserList]         = useState<string[]>(['All']);
+  const [qotdMap, setQotdMap]           = useState<Record<string, any>>({});
 
   useEffect(() => {
     async function fetchSubmissions() {
       try {
+        // Fetch QOTD for problem difficulty and acceptance rate
+        const qotdSnap = await getDocs(collection(db, 'qotd'));
+        const qMap: Record<string, any> = {};
+        qotdSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.titleSlug) qMap[data.titleSlug] = data;
+          if (data.date) qMap[data.date] = data;
+        });
+        setQotdMap(qMap);
+
         const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'));
         const snapshot = await getDocs(q);
         const rawData = snapshot.docs.map(d => d.data() as Submission);
@@ -187,16 +198,59 @@ export default function SubmissionsPage() {
                 </div>
               )}
 
-              {/* Problem name */}
+              {/* Problem name + difficulty & acceptance rate */}
               <div className="flex-1 min-w-0">
-                <a
-                  href={`https://leetcode.com/problems/${sub.titleSlug}/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-sm text-white hover:text-indigo-400 transition-colors truncate block"
-                >
-                  {sub.title}
-                </a>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <a
+                    href={`https://leetcode.com/problems/${sub.titleSlug}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-sm text-white hover:text-indigo-400 transition-colors truncate block"
+                  >
+                    {sub.title}
+                  </a>
+
+                  {(() => {
+                    const qInfo = qotdMap[sub.titleSlug] || qotdMap[sub.date];
+                    if (!qInfo) return null;
+                    const diff = qInfo.difficulty;
+                    const acRate = typeof qInfo.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
+
+                    return (
+                      <div className="inline-flex items-center gap-1.5 flex-wrap">
+                        {diff && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+                              diff.toLowerCase() === 'easy'
+                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                                : diff.toLowerCase() === 'hard'
+                                ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                                : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                            }`}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  diff.toLowerCase() === 'easy'
+                                    ? '#10b981'
+                                    : diff.toLowerCase() === 'hard'
+                                    ? '#f43f5e'
+                                    : '#f59e0b',
+                              }}
+                            />
+                            {diff}
+                          </span>
+                        )}
+                        {acRate && (
+                          <span className="text-[10px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                            {acRate} ac
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
                 <p className="text-xs text-slate-500 mt-0.5 truncate">@{sub.username}</p>
               </div>
 
@@ -239,6 +293,7 @@ export default function SubmissionsPage() {
           submissions={submissions}
           avatars={avatars}
           userColors={userColors}
+          qotdMap={qotdMap}
         />
       </AnimatePresence>
     </div>

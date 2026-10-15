@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
           title
           titleSlug
           difficulty
+          acRate
           content
           topicTags {
             name
@@ -106,12 +107,14 @@ export async function GET(request: NextRequest) {
 
     const qJson = await qRes.json();
     const qData = qJson?.data?.question;
+    const acRate = typeof qData?.acRate === 'number' ? qData.acRate : (typeof matched.question.acRate === 'number' ? matched.question.acRate : null);
 
     const record = {
       date,
       title: qData?.title || matched.question.title,
       titleSlug,
       difficulty: qData?.difficulty || matched.question.difficulty || 'Easy',
+      acRate,
       questionFrontendId: qData?.questionFrontendId || matched.question.questionFrontendId || null,
       topicTags: qData?.topicTags || matched.question.topicTags || [],
       link: matched.link ? `https://leetcode.com${matched.link}` : `https://leetcode.com/problems/${titleSlug}/`,

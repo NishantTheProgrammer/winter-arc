@@ -12,10 +12,15 @@ interface SubmissionModalProps {
   submissions: any[];
   avatars: Record<string, string>;
   userColors?: Record<string, string>;
+  qotdMap?: Record<string, any>;
 }
 
-export default function SubmissionModal({ selectedSub, setSelectedSub, submissions, avatars, userColors }: SubmissionModalProps) {
+export default function SubmissionModal({ selectedSub, setSelectedSub, submissions, avatars, userColors, qotdMap }: SubmissionModalProps) {
   if (!selectedSub) return null;
+
+  const qInfo = qotdMap?.[selectedSub.titleSlug] || qotdMap?.[selectedSub.date];
+  const diff = qInfo?.difficulty;
+  const acRate = typeof qInfo?.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -43,7 +48,38 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
         {/* Header */}
         <div className="flex flex-col gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 bg-white/5 shrink-0">
           <div className="flex items-start justify-between w-full gap-2">
-            <h3 className="text-base sm:text-lg font-bold text-white leading-tight">{selectedSub.title}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-bold text-white leading-tight">{selectedSub.title}</h3>
+              {diff && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+                    diff.toLowerCase() === 'easy'
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                      : diff.toLowerCase() === 'hard'
+                      ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                  }`}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor:
+                        diff.toLowerCase() === 'easy'
+                          ? '#10b981'
+                          : diff.toLowerCase() === 'hard'
+                          ? '#f43f5e'
+                          : '#f59e0b',
+                    }}
+                  />
+                  {diff}
+                </span>
+              )}
+              {acRate && (
+                <span className="text-[11px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                  {acRate} ac
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 ml-2 shrink-0">
               <a
                 href={`https://leetcode.com/submissions/detail/${selectedSub.submissionId}/`}

@@ -213,6 +213,8 @@ export async function getFullQuestionDetails(titleSlug: string): Promise<any> {
         title
         titleSlug
         difficulty
+        acRate
+        stats
         content
         topicTags {
           name
@@ -259,6 +261,7 @@ export async function getDailyCodingChallenges(year: number, month: number): Pro
             title
             titleSlug
             difficulty
+            acRate
             topicTags {
               name
               slug

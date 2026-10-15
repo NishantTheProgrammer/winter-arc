@@ -27,6 +27,7 @@ export async function syncQOTD(isForce = false): Promise<number> {
           title: q.title,
           titleSlug: q.titleSlug,
           difficulty: q.difficulty,
+          acRate: typeof q.acRate === 'number' ? q.acRate : (typeof full?.acRate === 'number' ? full.acRate : null),
           questionFrontendId: q.questionFrontendId || null,
           topicTags: q.topicTags?.map((t: any) => ({ name: t.name, slug: t.slug })) || [],
           link: todayQ.link ? `https://leetcode.com${todayQ.link}` : `https://leetcode.com/problems/${q.titleSlug}/`,
@@ -57,20 +58,22 @@ export async function syncQOTD(isForce = false): Promise<number> {
       const existing = await docRef.get();
       const existingData = existing.exists ? existing.data() : null;
 
-      // Skip if already has content and not forcing
-      if (!isForce && existingData && existingData.content && existingData.content !== 'No description available') {
+      // Skip if already has content and acRate, and not forcing
+      if (!isForce && existingData && existingData.content && existingData.content !== 'No description available' && existingData.acRate !== undefined) {
         continue;
       }
 
       // Fetch problem statement / details
       console.log(`  📥 Fetching details for ${challenge.date}: ${q.titleSlug}...`);
       const details = await getFullQuestionDetails(q.titleSlug);
+      const acRate = typeof details?.acRate === 'number' ? details.acRate : (typeof q.acRate === 'number' ? q.acRate : null);
 
       await docRef.set({
         date: challenge.date,
         title: q.title,
         titleSlug: q.titleSlug,
         difficulty: details?.difficulty || q.difficulty || 'Unknown',
+        acRate,
         questionFrontendId: details?.questionFrontendId || q.questionFrontendId || null,
         topicTags: details?.topicTags || q.topicTags?.map((t: any) => ({ name: t.name, slug: t.slug })) || [],
         link: challenge.link ? `https://leetcode.com${challenge.link}` : `https://leetcode.com/problems/${q.titleSlug}/`,
