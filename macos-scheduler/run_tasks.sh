@@ -169,27 +169,39 @@ if [[ "$CONTAINER_STATE" != *"running"* ]]; then
 fi
 
 # STEP 1: Run 'pick:sd' (max 5 minutes)
-log "─── [1/2] Executing: docker compose exec -T backend npm run pick:sd ───"
+log "─── [1/3] Executing: docker compose exec -T backend npm run pick:sd ───"
 STEP1_START=$(date +%s)
 if run_with_timeout 300 "$DOCKER_BIN" compose exec -T backend npm run pick:sd; then
     STEP1_DURATION=$(( $(date +%s) - STEP1_START ))
-    log "Step 1/2 (pick:sd) succeeded in ${STEP1_DURATION}s."
+    log "Step 1/3 (pick:sd) succeeded in ${STEP1_DURATION}s."
 else
     STEP1_CODE=$?
     STEP1_DURATION=$(( $(date +%s) - STEP1_START ))
-    log "ERROR: Step 1/2 (pick:sd) failed with exit code $STEP1_CODE after ${STEP1_DURATION}s."
+    log "ERROR: Step 1/3 (pick:sd) failed with exit code $STEP1_CODE after ${STEP1_DURATION}s."
 fi
 
 # STEP 2: Run 'sync' (Only after 'pick:sd' finished, max 10 minutes)
-log "─── [2/2] Executing: docker compose exec -T backend npm run sync ───"
+log "─── [2/3] Executing: docker compose exec -T backend npm run sync ───"
 STEP2_START=$(date +%s)
 if run_with_timeout 600 "$DOCKER_BIN" compose exec -T backend npm run sync; then
     STEP2_DURATION=$(( $(date +%s) - STEP2_START ))
-    log "Step 2/2 (sync) succeeded in ${STEP2_DURATION}s."
+    log "Step 2/3 (sync) succeeded in ${STEP2_DURATION}s."
 else
     STEP2_CODE=$?
     STEP2_DURATION=$(( $(date +%s) - STEP2_START ))
-    log "ERROR: Step 2/2 (sync) failed with exit code $STEP2_CODE after ${STEP2_DURATION}s."
+    log "ERROR: Step 2/3 (sync) failed with exit code $STEP2_CODE after ${STEP2_DURATION}s."
+fi
+
+# STEP 3: Run 'announce:discord' (Only posts once per day, idempotent, max 2 minutes)
+log "─── [3/3] Executing: docker compose exec -T backend npm run announce:discord ───"
+STEP3_START=$(date +%s)
+if run_with_timeout 120 "$DOCKER_BIN" compose exec -T backend npm run announce:discord; then
+    STEP3_DURATION=$(( $(date +%s) - STEP3_START ))
+    log "Step 3/3 (announce:discord) succeeded in ${STEP3_DURATION}s."
+else
+    STEP3_CODE=$?
+    STEP3_DURATION=$(( $(date +%s) - STEP3_START ))
+    log "WARNING: Step 3/3 (announce:discord) exited with code $STEP3_CODE after ${STEP3_DURATION}s."
 fi
 
 TOTAL_DURATION=$(( $(date +%s) - START_TIME ))

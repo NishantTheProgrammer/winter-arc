@@ -12,6 +12,7 @@
     "seed:qotd": "npx tsx src/scripts/seedQOTD.ts",
     "reanalyze": "npx tsx src/scripts/resetAndReanalyze.ts",
     "pick:sd": "npx tsx src/scripts/pickSystemDesign.ts",
+    "announce:discord": "npx tsx src/scripts/postDiscordAnnouncement.ts",
     "test:discord": "node --import tsx --test tests/discord/*.test.ts",
     "test": "npm run test:discord"
   },
