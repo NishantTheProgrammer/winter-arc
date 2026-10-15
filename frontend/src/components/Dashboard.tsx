@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink, Copy, Check, Percent } from 'lucide-react';
+import { Layers, ArrowRight, Lock, Unlock, Zap, Clock, Code2, ExternalLink, Copy, Check, Percent, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   DailySystemDesignRecord,
   DIFFICULTY_CONFIG,
@@ -13,6 +13,12 @@ import {
   MISSED_DATES,
   FEATURE_KICKOFF_DATE,
 } from '@/lib/systemDesign';
+import {
+  getCompaniesForProblem,
+  getSortedCompanies,
+  formatCompaniesForAnnouncement,
+  isProminentCompany,
+} from '@/lib/companyMapping';
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
@@ -27,6 +33,7 @@ const UserProgress = dynamic(() => import('./UserProgress'), { ssr: false });
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState('2026-10-01');
   const [mounted, setMounted] = useState(false);
+  const [showAllCompanies, setShowAllCompanies] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -190,6 +197,8 @@ export default function Dashboard() {
   const problemId = todayQotd?.questionFrontendId || firstSubWithContext?.questionFrontendId;
   const problemTags = todayQotd?.topicTags || [];
   const problemLink = todayQotd?.link || (problemSlug ? `https://leetcode.com/problems/${problemSlug}/` : null);
+  const problemCompanies = getCompaniesForProblem(problemLink || problemSlug);
+  const sortedCompanies = getSortedCompanies(problemCompanies);
 
   // Format daily group announcement matching the user's WhatsApp post format
   const getDailyAnnouncementText = () => {
@@ -203,6 +212,8 @@ export default function Dashboard() {
     // 2. Leetcode section
     const diff = problemDifficulty || 'Medium';
     const lcUrl = problemLink || (problemSlug ? `https://leetcode.com/problems/${problemSlug}` : '');
+    const companiesFormatted = formatCompaniesForAnnouncement(problemCompanies);
+    const companiesSection = companiesFormatted ? `\n${companiesFormatted}` : '';
 
     // 3. System design section
     const sdRecord = systemDesignMap[selectedDate];
@@ -224,7 +235,7 @@ export default function Dashboard() {
       }
     }
 
-    return `Day ${dayNumber}: ${diff}\n\nLeetcode:\n${lcUrl}${sdSection}`;
+    return `Day ${dayNumber}: ${diff}\n\nLeetcode:\n${lcUrl}${companiesSection}${sdSection}`;
   };
 
   const handleCopyAnnouncement = async () => {
@@ -241,6 +252,7 @@ export default function Dashboard() {
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
     setDashboardSdIndex(0);
+    setShowAllCompanies(false);
   };
 
   if (!mounted) return null; // Avoid rendering until client-side hydration completes
@@ -262,6 +274,7 @@ export default function Dashboard() {
           qotdTitle={todayQotd?.title || firstSubWithContext?.title}
           qotdDifficulty={problemDifficulty}
           qotdAcRate={problemAcRate}
+          qotdCompanies={problemCompanies}
           onCopyAnnouncement={handleCopyAnnouncement}
           copiedAnnouncement={copiedAnnouncement}
           loading={loading}
@@ -602,6 +615,13 @@ export default function Dashboard() {
                       </span>
                     )}
 
+                    {problemCompanies.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 bg-purple-500/10 border-purple-500/25 text-purple-300">
+                        <Building2 className="w-3 h-3 text-purple-400" />
+                        <span>{problemCompanies.length} {problemCompanies.length === 1 ? 'Company' : 'Companies'}</span>
+                      </span>
+                    )}
+
                     {problemId && (
                       <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-xs font-mono border border-white/10">
                         Problem #{problemId}
@@ -662,6 +682,61 @@ export default function Dashboard() {
                           {t.name}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Asked by Companies */}
+                  {problemCompanies.length > 0 && (
+                    <div className="pt-2 border-t border-white/5 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+                          <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Asked by {problemCompanies.length} {problemCompanies.length === 1 ? 'Company' : 'Companies'}</span>
+                        </div>
+                        {problemCompanies.length > 8 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllCompanies(!showAllCompanies)}
+                            className="text-[11px] font-medium text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{showAllCompanies ? 'Show less' : `+${problemCompanies.length - 8} more`}</span>
+                            {showAllCompanies ? (
+                              <ChevronUp className="w-3 h-3" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {sortedCompanies
+                          .slice(0, showAllCompanies ? sortedCompanies.length : 8)
+                          .map((company) => {
+                            const isProminent = isProminentCompany(company);
+                            return (
+                              <span
+                                key={company}
+                                className={`px-2 py-0.5 rounded-md text-[11px] transition-all ${
+                                  isProminent
+                                    ? 'bg-purple-500/15 border border-purple-500/30 text-purple-200 font-semibold shadow-sm'
+                                    : 'bg-white/5 border border-white/10 text-slate-300 font-normal'
+                                }`}
+                              >
+                                {company}
+                              </span>
+                            );
+                          })}
+                        {!showAllCompanies && problemCompanies.length > 8 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllCompanies(true)}
+                            className="px-2 py-0.5 rounded-md text-[11px] bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/25 transition-all font-medium cursor-pointer"
+                          >
+                            +{problemCompanies.length - 8} more
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { FileCode2, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
+import { FileCode2, CheckCircle2, Clock, ChevronDown, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SubmissionModal from '@/components/SubmissionModal';
+import { getCompaniesForProblem } from '@/lib/companyMapping';
 
 import { getUserTheme, resolveDisplayName } from '@/lib/userTheme';
 
@@ -212,9 +213,11 @@ export default function SubmissionsPage() {
 
                   {(() => {
                     const qInfo = qotdMap[sub.titleSlug] || qotdMap[sub.date];
-                    if (!qInfo) return null;
-                    const diff = qInfo.difficulty;
-                    const acRate = typeof qInfo.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
+                    const diff = qInfo?.difficulty;
+                    const acRate = typeof qInfo?.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
+                    const cos = getCompaniesForProblem(sub.titleSlug);
+
+                    if (!diff && !acRate && cos.length === 0) return null;
 
                     return (
                       <div className="inline-flex items-center gap-1.5 flex-wrap">
@@ -245,6 +248,15 @@ export default function SubmissionsPage() {
                         {acRate && (
                           <span className="text-[10px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
                             {acRate} ac
+                          </span>
+                        )}
+                        {cos.length > 0 && (
+                          <span
+                            className="text-[10px] text-purple-300 font-medium bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 flex items-center gap-1"
+                            title={`Asked by ${cos.length} companies: ${cos.slice(0, 5).join(', ')}${cos.length > 5 ? '...' : ''}`}
+                          >
+                            <Building2 className="w-2.5 h-2.5 text-purple-400" />
+                            <span>{cos.length} {cos.length === 1 ? 'co.' : 'cos.'}</span>
                           </span>
                         )}
                       </div>

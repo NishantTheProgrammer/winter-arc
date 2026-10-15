@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+
 const LEETCODE_API_URL = 'https://leetcode.com/graphql/';
 const HEADERS = {
   'Content-Type': 'application/json',

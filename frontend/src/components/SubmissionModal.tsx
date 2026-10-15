@@ -5,6 +5,12 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { getUserTheme } from '@/lib/userTheme';
 import { calculateAggregatedScore } from '@/lib/scoreCalculator';
+import { Building2 } from 'lucide-react';
+import {
+  getCompaniesForProblem,
+  getSortedCompanies,
+  isProminentCompany,
+} from '@/lib/companyMapping';
 
 interface SubmissionModalProps {
   selectedSub: any;
@@ -21,6 +27,8 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
   const qInfo = qotdMap?.[selectedSub.titleSlug] || qotdMap?.[selectedSub.date];
   const diff = qInfo?.difficulty;
   const acRate = typeof qInfo?.acRate === 'number' ? `${qInfo.acRate.toFixed(1)}%` : null;
+  const companies = getCompaniesForProblem(selectedSub.titleSlug);
+  const sortedCompanies = getSortedCompanies(companies);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -97,6 +105,33 @@ export default function SubmissionModal({ selectedSub, setSelectedSub, submissio
               </button>
             </div>
           </div>
+
+          {/* Asked by Companies */}
+          {companies.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span className="text-[11px] text-purple-300 flex items-center gap-1 font-medium bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                <Building2 className="w-3 h-3 text-purple-400" />
+                <span>Asked by {companies.length} {companies.length === 1 ? 'Company' : 'Companies'}:</span>
+              </span>
+              {sortedCompanies.slice(0, 8).map((c) => (
+                <span
+                  key={c}
+                  className={`px-1.5 py-0.5 rounded text-[10px] ${
+                    isProminentCompany(c)
+                      ? 'bg-purple-500/15 border border-purple-500/30 text-purple-200 font-semibold shadow-sm'
+                      : 'bg-white/5 border border-white/10 text-slate-300'
+                  }`}
+                >
+                  {c}
+                </span>
+              ))}
+              {companies.length > 8 && (
+                <span className="text-[10px] text-purple-400 font-medium bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10">
+                  +{companies.length - 8} more
+                </span>
+              )}
+            </div>
+          )}
 
           {/* User chips */}
           <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">

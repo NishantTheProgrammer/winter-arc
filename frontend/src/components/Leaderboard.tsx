@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Cpu, Code2, BookOpen, Copy, Check } from 'lucide-react';
+import { Trophy, Cpu, Code2, BookOpen, Copy, Check, Building2 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -35,6 +35,7 @@ interface LeaderboardProps {
   qotdTitle?: string;
   qotdDifficulty?: string;
   qotdAcRate?: string | null;
+  qotdCompanies?: string[];
   onCopyAnnouncement?: () => void;
   copiedAnnouncement?: boolean;
   loading?: boolean;
@@ -51,6 +52,7 @@ export default function Leaderboard({
   qotdTitle,
   qotdDifficulty,
   qotdAcRate,
+  qotdCompanies,
   onCopyAnnouncement,
   copiedAnnouncement,
   loading: externalLoading,
@@ -182,6 +184,15 @@ export default function Leaderboard({
                 {qotdAcRate && (
                   <span className="text-[11px] text-slate-400 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
                     {qotdAcRate} ac
+                  </span>
+                )}
+                {qotdCompanies && qotdCompanies.length > 0 && (
+                  <span
+                    className="text-[11px] text-purple-300 font-medium bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 flex items-center gap-1"
+                    title={`Asked by ${qotdCompanies.length} companies: ${qotdCompanies.slice(0, 8).join(', ')}${qotdCompanies.length > 8 ? '...' : ''}`}
+                  >
+                    <Building2 className="w-3 h-3 text-purple-400" />
+                    <span>{qotdCompanies.length} {qotdCompanies.length === 1 ? 'co.' : 'cos.'}</span>
                   </span>
                 )}
               </div>
