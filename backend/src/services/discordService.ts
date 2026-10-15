@@ -1,12 +1,13 @@
-import axios from 'axios';
 import { db } from '../firebase/config';
 import { getISTDateString, pickProblemsForDate, getAssignedRecordForDate } from './systemDesignService';
 import { getCompaniesForProblem, formatCompaniesForAnnouncement } from './companyService';
 import { getQuestionOfTheDay, getFullQuestionDetails } from '../leetcode/client';
+import { sendDiscordMessage } from './discordClient';
 
 export interface AnnouncementData {
   targetDate: string;
   dayNumber: number;
+  isDetected: boolean;
   qotd: {
     title: string;
     titleSlug: string;
@@ -61,21 +62,25 @@ export async function prepareAnnouncementData(targetDateInput?: string): Promise
   if (!qotdData) {
     try {
       const activeQ = await getQuestionOfTheDay();
-      if (activeQ && activeQ.question) {
+      if (activeQ && activeQ.date === targetDate && activeQ.question) {
         const full = await getFullQuestionDetails(activeQ.question.titleSlug);
         qotdData = {
+          date: activeQ.date,
           title: activeQ.question.title,
           titleSlug: activeQ.question.titleSlug,
           difficulty: activeQ.question.difficulty || 'Medium',
           link: activeQ.link ? `https://leetcode.com${activeQ.link}` : `https://leetcode.com/problems/${activeQ.question.titleSlug}/`,
           content: full?.content || activeQ.question.content || '',
         };
+        // Save to Firestore so sync is recorded
+        await db.collection('qotd').doc(targetDate).set(qotdData, { merge: true });
       }
     } catch (err: any) {
       console.warn(`[DiscordService] Could not dynamically fetch QOTD: ${err.message}`);
     }
   }
 
+  const isQotdDetected = Boolean(qotdData && qotdData.title);
   const qotdTitle = qotdData?.title || 'Daily LeetCode Problem';
   const qotdSlug = qotdData?.titleSlug || '';
   const qotdDifficulty = qotdData?.difficulty || 'Medium';
@@ -146,6 +151,7 @@ export async function prepareAnnouncementData(targetDateInput?: string): Promise
   return {
     targetDate,
     dayNumber,
+    isDetected: isQotdDetected && problemsCount > 0,
     qotd: {
       title: qotdTitle,
       titleSlug: qotdSlug,
@@ -173,7 +179,7 @@ export interface SendAnnouncementOptions {
 
 export interface SendAnnouncementResult {
   success: boolean;
-  status: 'POSTED' | 'ALREADY_POSTED' | 'DRY_RUN' | 'CONFIG_MISSING' | 'ERROR';
+  status: 'POSTED' | 'ALREADY_POSTED' | 'WAITING_FOR_DATA' | 'DRY_RUN' | 'CONFIG_MISSING' | 'ERROR';
   message: string;
   data?: AnnouncementData;
 }
@@ -207,7 +213,19 @@ export async function sendDailyAnnouncement(
   // 2. Build announcement payload
   const announcement = await prepareAnnouncementData(targetDate);
 
-  // 3. Dry-run mode
+  // 3. Detection Check: ensure both problems are detected before posting
+  if (!announcement.isDetected && !options.force && !options.dryRun) {
+    const msg = `Today's Question of the Day (${targetDate}) or System Design problem is not yet detected. Waiting for next sync cycle.`;
+    console.log(`⏳ [Discord Bot] ${msg}`);
+    return {
+      success: false,
+      status: 'WAITING_FOR_DATA',
+      message: msg,
+      data: announcement,
+    };
+  }
+
+  // 4. Dry-run mode
   if (options.dryRun) {
     console.log('\n--- [DRY RUN PREVIEW] ---');
     console.log(`Target Date: ${announcement.targetDate} (Day ${announcement.dayNumber})`);
@@ -227,23 +245,6 @@ export async function sendDailyAnnouncement(
     };
   }
 
-  // 4. Verify Discord configuration
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL?.trim();
-  const botToken = process.env.DISCORD_BOT_TOKEN?.trim();
-  const channelId = process.env.DISCORD_CHANNEL_ID?.trim();
-
-  if (!webhookUrl && (!botToken || !channelId)) {
-    const errorMsg =
-      'Discord configuration missing! Set DISCORD_WEBHOOK_URL (recommended) or DISCORD_BOT_TOKEN & DISCORD_CHANNEL_ID in backend/.env';
-    console.error(`⚠️  [Discord Bot] ${errorMsg}`);
-    return {
-      success: false,
-      status: 'CONFIG_MISSING',
-      message: errorMsg,
-      data: announcement,
-    };
-  }
-
   // 5. Build Discord API request body
   let payload: Record<string, any> = {};
 
@@ -257,63 +258,42 @@ export async function sendDailyAnnouncement(
     payload.embeds = [announcement.embed];
   }
 
-  let methodUsed = '';
+  // 6. Send to Discord with automatic retries and backoff
+  console.log(`🚀 [Discord Bot] Sending daily challenge announcement to Discord (with retries)...`);
+  const sendRes = await sendDiscordMessage({
+    content: payload.content,
+    embeds: payload.embeds,
+    maxRetries: 3,
+    initialDelayMs: 2000,
+  });
 
-  try {
-    if (webhookUrl) {
-      methodUsed = 'webhook';
-      payload.username = 'winter-arc';
-      payload.avatar_url = 'https://assets.leetcode.com/static_assets/public/icons/favicon-192x192.png';
-
-      console.log(`🚀 [Discord Bot] Sending announcement via Webhook to Discord...`);
-      await axios.post(webhookUrl, payload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      });
-    } else if (botToken && channelId) {
-      methodUsed = 'bot_rest';
-      console.log(`🚀 [Discord Bot] Sending announcement via Bot REST API to channel ${channelId}...`);
-      await axios.post(
-        `https://discord.com/api/v10/channels/${channelId}/messages`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bot ${botToken}`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 15000,
-        }
-      );
-    }
-
-    console.log(`✅ [Discord Bot] Daily announcement for Day ${announcement.dayNumber} (${targetDate}) posted successfully!`);
-
-    // 6. Record in Firestore for idempotency
-    await announcementRef.set({
-      date: targetDate,
-      dayNumber: announcement.dayNumber,
-      postedAt: new Date().toISOString(),
-      method: methodUsed,
-      qotdTitle: announcement.qotd.title,
-      qotdLink: announcement.qotd.link,
-      systemDesignTitle: announcement.systemDesign.titles,
-      format,
-    });
-
-    return {
-      success: true,
-      status: 'POSTED',
-      message: `Announcement posted successfully via ${methodUsed}.`,
-      data: announcement,
-    };
-  } catch (error: any) {
-    const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-    console.error(`❌ [Discord Bot] Failed to send announcement to Discord: ${errorDetails}`);
+  if (!sendRes.success) {
+    console.error(`❌ [Discord Bot] Failed to send announcement to Discord: ${sendRes.error}`);
     return {
       success: false,
       status: 'ERROR',
-      message: `Failed to send to Discord: ${errorDetails}`,
+      message: `Failed to send to Discord: ${sendRes.error}`,
       data: announcement,
     };
   }
+
+  console.log(`✅ [Discord Bot] Daily announcement for Day ${announcement.dayNumber} (${targetDate}) posted successfully!`);
+
+  // 7. Record in Firestore for idempotency (only on verified success)
+  await announcementRef.set({
+    date: targetDate,
+    dayNumber: announcement.dayNumber,
+    postedAt: new Date().toISOString(),
+    qotdTitle: announcement.qotd.title,
+    qotdLink: announcement.qotd.link,
+    systemDesignTitle: announcement.systemDesign.titles,
+    format,
+  });
+
+  return {
+    success: true,
+    status: 'POSTED',
+    message: `Announcement posted successfully to Discord.`,
+    data: announcement,
+  };
 }

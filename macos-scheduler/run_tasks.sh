@@ -169,39 +169,51 @@ if [[ "$CONTAINER_STATE" != *"running"* ]]; then
 fi
 
 # STEP 1: Run 'pick:sd' (max 5 minutes)
-log "─── [1/3] Executing: docker compose exec -T backend npm run pick:sd ───"
+log "─── [1/4] Executing: docker compose exec -T backend npm run pick:sd ───"
 STEP1_START=$(date +%s)
 if run_with_timeout 300 "$DOCKER_BIN" compose exec -T backend npm run pick:sd; then
     STEP1_DURATION=$(( $(date +%s) - STEP1_START ))
-    log "Step 1/3 (pick:sd) succeeded in ${STEP1_DURATION}s."
+    log "Step 1/4 (pick:sd) succeeded in ${STEP1_DURATION}s."
 else
     STEP1_CODE=$?
     STEP1_DURATION=$(( $(date +%s) - STEP1_START ))
-    log "ERROR: Step 1/3 (pick:sd) failed with exit code $STEP1_CODE after ${STEP1_DURATION}s."
+    log "ERROR: Step 1/4 (pick:sd) failed with exit code $STEP1_CODE after ${STEP1_DURATION}s."
 fi
 
 # STEP 2: Run 'sync' (Only after 'pick:sd' finished, max 10 minutes)
-log "─── [2/3] Executing: docker compose exec -T backend npm run sync ───"
+log "─── [2/4] Executing: docker compose exec -T backend npm run sync ───"
 STEP2_START=$(date +%s)
 if run_with_timeout 600 "$DOCKER_BIN" compose exec -T backend npm run sync; then
     STEP2_DURATION=$(( $(date +%s) - STEP2_START ))
-    log "Step 2/3 (sync) succeeded in ${STEP2_DURATION}s."
+    log "Step 2/4 (sync) succeeded in ${STEP2_DURATION}s."
 else
     STEP2_CODE=$?
     STEP2_DURATION=$(( $(date +%s) - STEP2_START ))
-    log "ERROR: Step 2/3 (sync) failed with exit code $STEP2_CODE after ${STEP2_DURATION}s."
+    log "ERROR: Step 2/4 (sync) failed with exit code $STEP2_CODE after ${STEP2_DURATION}s."
 fi
 
-# STEP 3: Run 'announce:discord' (Only posts once per day, idempotent, max 2 minutes)
-log "─── [3/3] Executing: docker compose exec -T backend npm run announce:discord ───"
+# STEP 3: Run 'announce:discord' (Only posts when QOTD+SD detected, once per day, max 2 minutes)
+log "─── [3/4] Executing: docker compose exec -T backend npm run announce:discord ───"
 STEP3_START=$(date +%s)
 if run_with_timeout 120 "$DOCKER_BIN" compose exec -T backend npm run announce:discord; then
     STEP3_DURATION=$(( $(date +%s) - STEP3_START ))
-    log "Step 3/3 (announce:discord) succeeded in ${STEP3_DURATION}s."
+    log "Step 3/4 (announce:discord) succeeded in ${STEP3_DURATION}s."
 else
     STEP3_CODE=$?
     STEP3_DURATION=$(( $(date +%s) - STEP3_START ))
-    log "WARNING: Step 3/3 (announce:discord) exited with code $STEP3_CODE after ${STEP3_DURATION}s."
+    log "WARNING: Step 3/4 (announce:discord) exited with code $STEP3_CODE after ${STEP3_DURATION}s."
+fi
+
+# STEP 4: Run 'announce:sd-solution' (Unlocks at 6:00 PM IST, LLM generated, once per day, max 3 minutes)
+log "─── [4/4] Executing: docker compose exec -T backend npm run announce:sd-solution ───"
+STEP4_START=$(date +%s)
+if run_with_timeout 180 "$DOCKER_BIN" compose exec -T backend npm run announce:sd-solution; then
+    STEP4_DURATION=$(( $(date +%s) - STEP4_START ))
+    log "Step 4/4 (announce:sd-solution) succeeded in ${STEP4_DURATION}s."
+else
+    STEP4_CODE=$?
+    STEP4_DURATION=$(( $(date +%s) - STEP4_START ))
+    log "WARNING: Step 4/4 (announce:sd-solution) exited with code $STEP4_CODE after ${STEP4_DURATION}s."
 fi
 
 TOTAL_DURATION=$(( $(date +%s) - START_TIME ))
