@@ -121,6 +121,20 @@ cmd_run() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚡ [System Daemon] Closed-lid execution started (PID: $$)" >> "$log_file"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Power State: $("$PMSET_BIN" -g batt 2>/dev/null | grep -oE "'.*'" || echo 'Unknown')" >> "$log_file"
 
+    # 3. Wait up to 30s for Wi-Fi & DNS to establish after wake
+    local max_wait=30
+    local wait_count=0
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🌐 Waiting for Wi-Fi / DNS resolution..." >> "$log_file"
+    while ! /usr/bin/dscacheutil -q host -a name firestore.googleapis.com >/dev/null 2>&1 && [ $wait_count -lt $max_wait ]; do
+        sleep 2
+        wait_count=$((wait_count + 2))
+    done
+    if [ $wait_count -ge $max_wait ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ DNS not responsive after ${max_wait}s; continuing anyway..." >> "$log_file"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🌐 Network & DNS ready in ${wait_count}s." >> "$log_file"
+    fi
+
     export DOCKER_HOST="unix:///Users/nishant/.docker/run/docker.sock"
     local container="${BACKEND_CONTAINER:-winter-arc-backend-1}"
 

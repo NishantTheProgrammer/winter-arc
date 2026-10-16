@@ -200,6 +200,17 @@ if [[ "$CONTAINER_STATE" != *"running"* ]]; then
     fi
 fi
 
+# Wait up to 30s for Wi-Fi & DNS to establish after wake
+WAIT_MAX=30
+WAIT_COUNT=0
+while ! /usr/bin/dscacheutil -q host -a name firestore.googleapis.com >/dev/null 2>&1 && [ $WAIT_COUNT -lt $WAIT_MAX ]; do
+    sleep 2
+    WAIT_COUNT=$((WAIT_COUNT + 2))
+done
+if [ $WAIT_COUNT -gt 0 ]; then
+    log "Network & DNS ready in ${WAIT_COUNT}s."
+fi
+
 # STEP 1: Run 'pick:sd' (max 5 minutes)
 log "─── [1/4] Executing: docker compose exec -T backend npm run pick:sd ───"
 STEP1_START=$(date +%s)
